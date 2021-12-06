@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(student_proect)
+project(student_project)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -17,6 +17,7 @@ include_directories(
 ## CREATE EXECUTABLE LIBRARY
 add_library(student SHARED
    src/student_interface.cpp
+   src/clipper/clipper.cpp
 )
 
 target_link_libraries(student
