@@ -6,5 +6,5 @@
 #include "utils.hpp"
 #include "clipper/clipper.hpp"
 
-std::vector<Polygon> inflateObstacles(const std::vector<Polygon> &obstacle_list);
-Polygon inflateBorders(const Polygon &borders);
+std::vector<Polygon> inflateObstacles(const std::vector<Polygon> &obstacle_list, const Polygon &borders);
+Polygon inflateBorders(const Polygon &borders, cv::Mat &plot);
