@@ -101,4 +101,78 @@ struct shortestDubinsResult
     dubinsCurve curve;
 };
 
+
+//----------------------------------------------------------------
+//          DEFINE POINTER TO ALL DUBINS TYPES
+//----------------------------------------------------------------
+typedef primitiveResult (*DubinsTypes) (scParams sc);
+
+
+//----------------------------------------------------------------
+//          FUNCTIONS FOR DUBINS CURVE
+//----------------------------------------------------------------
+
+//----------------------------------------------------------------
+//          DEFINE AUXILIARY UTILITY FUNCTIONS
+//----------------------------------------------------------------
+// Implementation of function sinc(t), returning 1 for t==0, and sin(t)/t otherwise
+float sinc(float t);
+
+// Normalize an angle in range [0,2*pi)
+float mod2Pi(float angle);
+
+// Normalize an angular difference in range (-pi, pi]
+float rangeSymm(float angle);
+
+// Evaluate an arc (circular or straight) composing a Dubins curve, at a given arc-length s
+robotPos circLine(robotPos pos0, float L, float k);
+
+// Check validity of a solution by evaluating explicitly the 3 equations
+// defining a Dubins problem (in standard form)
+bool check(standardLength sl, float *ks, scParams sc);
+
+//----------------------------------------------------------------
+//          DEFINE SCALE FUNCTIONS
+//----------------------------------------------------------------
+// Scale the input problem to standard form (x0: -1, y0: 0, xf: 1, yf: 0)
+scParamsWithLambda scaleToStandard(robotPos pos0, robotPos posf, float Kmax);
+
+// Scale the solution to the standard problem back to the original problem
+originalLength scaleFromStandard(float lambda, standardLength sl);
+
+//----------------------------------------------------------------
+//          DEFINE SIX DUBINS FUNCTIONS
+//----------------------------------------------------------------
+// LSL function
+primitiveResult LSL(scParams sc);
+
+// RSR function
+primitiveResult RSR(scParams sc);
+
+// LSR function
+primitiveResult LSR(scParams sc);
+
+// RSL function
+primitiveResult RSL(scParams sc);
+
+// RLR function
+primitiveResult RLR(scParams sc);
+
+// LRL function
+primitiveResult LRL(scParams sc);
+
+//----------------------------------------------------------------
+//          CREATE DUBINS CURVE
+//----------------------------------------------------------------
+// Create the arc of a dubins curve
+dubinsArc createArc(robotPos pos0, float k, float L);
+
+// Create the dubins curve
+dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks);
+
+//----------------------------------------------------------------
+//          FIND SHORTEST DUBINS CURVE
+//----------------------------------------------------------------
+shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print=false);
+
 #endif /* DUBINS_H */
