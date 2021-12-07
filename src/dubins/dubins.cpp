@@ -26,7 +26,7 @@
 #include <math.h>
 #include <limits>
 #include <assert.h>
-// #include "dubins.h"
+#include "dubins.h"
 
 using namespace std;
 
