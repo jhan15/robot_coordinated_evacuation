@@ -160,3 +160,193 @@ originalLength scaleFromStandard(float lambda, standardLength sl)
 
     return ol;
 }
+
+
+//----------------------------------------------------------------
+//          DEFINE SIX DUBINS FUNCTIONS
+//----------------------------------------------------------------
+// LSL function
+primitiveResult LSL(scParams sc)
+{
+    primitiveResult primitive;
+
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_thf) - cos(sc.sc_th0);
+    float S = 2 * sc.sc_Kmax + sin(sc.sc_th0) - sin(sc.sc_thf);
+    float temp1 = atan2(C, S);
+    primitive.sl.sc_s1 = invK * mod2Pi(temp1 - sc.sc_th0);
+    float temp2 = 2 + 4 * pow(sc.sc_Kmax,2) - 2 * cos(sc.sc_th0 - sc.sc_thf)
+                    + 4 * sc.sc_Kmax * (sin(sc.sc_th0) - sin(sc.sc_thf));
+    
+    if (temp2 < 0)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * sqrt(temp2);
+        primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - temp1);
+    }
+
+    return primitive;
+}
+
+// RSR function
+primitiveResult RSR(scParams sc)
+{
+    primitiveResult primitive;
+
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_th0) - cos(sc.sc_thf);
+    float S = 2 * sc.sc_Kmax - sin(sc.sc_th0) + sin(sc.sc_thf);
+    float temp1 = atan2(C, S);
+    primitive.sl.sc_s1 = invK * mod2Pi(sc.sc_th0 - temp1);
+    float temp2 = 2 + 4 * pow(sc.sc_Kmax,2) - 2 * cos(sc.sc_th0 - sc.sc_thf)
+                    - 4 * sc.sc_Kmax * (sin(sc.sc_th0) - sin(sc.sc_thf));
+    
+    if (temp2 < 0)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * sqrt(temp2);
+        primitive.sl.sc_s3 = invK * mod2Pi(temp1 - sc.sc_thf);
+    }
+
+    return primitive;
+}
+
+// LSR function
+primitiveResult LSR(scParams sc)
+{
+    primitiveResult primitive;
+
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_thf) + cos(sc.sc_th0);
+    float S = 2 * sc.sc_Kmax + sin(sc.sc_th0) + sin(sc.sc_thf);
+    float temp1 = atan2(-C, S);
+    float temp3 = 4 * pow(sc.sc_Kmax,2) - 2 + 2 * cos(sc.sc_th0 - sc.sc_thf)
+                  + 4 * sc.sc_Kmax * (sin(sc.sc_th0) + sin(sc.sc_thf));
+    
+    if (temp3 < 0)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * sqrt(temp3);
+        float temp2 = -atan2(-2, primitive.sl.sc_s2 * sc.sc_Kmax);
+        primitive.sl.sc_s1 = invK * mod2Pi(temp1 + temp2 - sc.sc_th0);
+        primitive.sl.sc_s3 = invK * mod2Pi(temp1 + temp2 - sc.sc_thf);
+    }
+
+    return primitive;
+}
+
+// RSL function
+primitiveResult RSL(scParams sc)
+{
+    primitiveResult primitive;
+
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_thf) + cos(sc.sc_th0);
+    float S = 2 * sc.sc_Kmax - sin(sc.sc_th0) - sin(sc.sc_thf);
+    float temp1 = atan2(C, S);
+    float temp3 = 4 * pow(sc.sc_Kmax,2) - 2 + 2 * cos(sc.sc_th0 - sc.sc_thf)
+                  - 4 * sc.sc_Kmax * (sin(sc.sc_th0) + sin(sc.sc_thf));
+    
+    if (temp3 < 0)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * sqrt(temp3);
+        float temp2 = atan2(2, primitive.sl.sc_s2 * sc.sc_Kmax);
+        primitive.sl.sc_s1 = invK * mod2Pi(sc.sc_th0 - temp1 + temp2);
+        primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - temp1 + temp2);
+    }
+
+    return primitive;
+}
+
+// RLR function
+primitiveResult RLR(scParams sc)
+{
+    primitiveResult primitive;
+
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_th0) - cos(sc.sc_thf);
+    float S = 2 * sc.sc_Kmax - sin(sc.sc_th0) + sin(sc.sc_thf);
+    float temp1 = atan2(C, S);
+    float temp2 = 0.125 * (6 - 4 * pow(sc.sc_Kmax,2) + 2 * cos(sc.sc_th0 - sc.sc_thf)
+                  + 4 * sc.sc_Kmax * (sin(sc.sc_th0) - sin(sc.sc_thf)));
+    
+    if (abs(temp2) > 1)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * mod2Pi(2 * M_PI - acos(temp2));
+        primitive.sl.sc_s1 = invK * mod2Pi(sc.sc_th0 - temp1 +
+                             0.5 * primitive.sl.sc_s2 * sc.sc_Kmax);
+        primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_th0 - sc.sc_thf +
+                             sc.sc_Kmax * (primitive.sl.sc_s2 - primitive.sl.sc_s1));
+    }
+
+    return primitive;
+}
+
+// LRL function
+primitiveResult LRL(scParams sc)
+{
+    primitiveResult primitive;
+    
+    float invK = 1 / sc.sc_Kmax;
+    float C = cos(sc.sc_thf) - cos(sc.sc_th0);
+    float S = 2 * sc.sc_Kmax + sin(sc.sc_th0) - sin(sc.sc_thf);
+    float temp1 = atan2(C, S);
+    float temp2 = 0.125 * (6 - 4 * pow(sc.sc_Kmax,2) + 2 * cos(sc.sc_th0 - sc.sc_thf)
+                  - 4 * sc.sc_Kmax * (sin(sc.sc_th0) - sin(sc.sc_thf)));
+    
+    if (abs(temp2) > 1)
+    {
+        primitive.ok = false;
+        primitive.sl.sc_s1 = 0.0;
+        primitive.sl.sc_s2 = 0.0;
+        primitive.sl.sc_s3 = 0.0;
+    }
+    else
+    {
+        primitive.ok = true;
+        primitive.sl.sc_s2 = invK * mod2Pi(2 * M_PI - acos(temp2));
+        primitive.sl.sc_s1 = invK * mod2Pi(temp1 - sc.sc_th0 +
+                             0.5 * primitive.sl.sc_s2 * sc.sc_Kmax);
+        primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - sc.sc_th0 +
+                             sc.sc_Kmax * (primitive.sl.sc_s2 - primitive.sl.sc_s1));
+    }
+
+    return primitive;
+}
