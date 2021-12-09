@@ -31,4 +31,9 @@ $ AR_run
 ```bash
 # Modify the environment
 $ gedit $AR_map_file
+
+# Disable demo implementation
+$ cd $AR_config_dir
+$ gedit default_implementation.config
+# Then set flag to <False> in order to implement our own solution
 ```
