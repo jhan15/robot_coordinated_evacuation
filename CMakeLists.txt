@@ -19,6 +19,7 @@ add_library(student SHARED
    src/student_interface.cpp
    src/inflateObjects.cpp
    src/clipper/clipper.cpp
+   src/collisionDetect.cpp
    #src/dubins/dubins.cpp
 )
 
