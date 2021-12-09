@@ -1,10 +1,12 @@
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
+
 #include <vector>
+#include <cmath>
 
 using namespace cv;
+
+std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
+std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line);
 
 double crossProd(Point2d a, Point2d b){
 	return a.x * b.y - a.y * b.x;
@@ -90,4 +92,61 @@ std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point
    	}
    	
    	return pts;
+}
+
+std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line){
+    std::vector<Point2d> pts;
+	std::vector<double> t;
+
+	double line_x1 = line[0].x;
+	double line_y1 = line[0].y;
+
+	double line_x2 = line[1].x;
+	double line_y2 = line[1].y;
+
+	double p1 = 2*line_x1*line_x2;
+    double p2 = 2*line_y1*line_y2;
+    double p3 = 2*a*line_x1;
+    double p4 = 2*a*line_x2;
+    double p5 = 2*b*line_y1;
+    double p6 = 2*b*line_y2;
+
+    double c1 = pow(line_x1,2)+pow(line_x2,2)-p1+ pow(line_y1,2)+pow(line_y2,2)-p2;
+    double c2 = -2*pow(line_x2,2)+p1-p3+p4-2*pow(line_y2,2)+p2-p5+p6;
+    double c3 = pow(line_x2,2)-p4+pow(a,2)+pow(line_y2,2)-p6+pow(b,2)-pow(r,2);
+
+    double delta = pow(c2,2)-4*c1*c3;
+    double t1, t2, x, y;
+
+    if(delta<0){
+    	return pts;
+    }
+    else{
+    	if(delta>0){
+    		double deltaSq = sqrt(delta);
+    		t1 = (-c2+deltaSq)/(2*c1);
+        	t2 = (-c2-deltaSq)/(2*c1);
+    	}
+    	else{
+    		t1 = -c2/(2*c1);
+        	t2 = t1;
+    	}
+    }
+
+    if(t1>=0 && t1<=1){
+    	x = line_x1*t1+line_x2*(1-t1);
+    	y = line_y1*t1+line_y2*(1-t1);
+    	pts.emplace_back(Point2d(x,y));
+    	t.emplace_back(t1);
+    }
+
+    if(t2 >=0 && t2<=1 && t2!=t1){
+	    x = line_x1*t2+line_x2*(1-t2);
+	    y = line_y1*t2+line_y2*(1-t2);
+	    pts.emplace_back(Point2d(x,y));
+    	t.emplace_back(t2);
+	}
+
+    return pts;
+
 }
