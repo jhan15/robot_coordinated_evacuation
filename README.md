@@ -22,7 +22,7 @@ $ AR_pipeline
 # Select the 4 black corners counter-clockwise starting from the one near the red line
 # Then stop (ctrl + C)
 $ AR_pipeline
-$ AR_rivz
+$ AR_rviz
 $ AR_run
 ```
 
