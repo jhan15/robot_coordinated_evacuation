@@ -125,6 +125,57 @@ int check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segme
     return res;
 }
 
+std::vector<int> backtrace(std::vector<int> parent, int start, int end) {
+	std::vector<int> path;
+	std::vector<int> temp_path;
+    temp_path.push_back(end);
+
+    while (temp_path[temp_path.size()-1] != start) {
+        temp_path.push_back(parent[temp_path[temp_path.size()-1]]);
+    }
+
+    for(int i = temp_path.size() - 1; i >= 0; i--){
+    	path.push_back(temp_path[i]);
+    }
+
+    return path;
+}
+
+//Breadth First Search on a graph with a given Source and Target
+std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int target) {
+	std::vector<int> path;
+	std::vector<int> visited;
+	std::vector<int> parent;
+	std::vector<int> queue;
+	int current;
+
+	int size = graph.size();
+	for(int node = 0; node < size; node++){
+		visited.push_back(0);
+		parent.push_back(-1);
+	}
+
+	queue.push_back(source);
+	while(queue.size() > 0){
+		current = queue[0];
+		queue.erase(queue.begin());
+		if (current == target) {
+			path = backtrace(parent, source, target);
+			return path;
+		}
+		for (int neighbor = 0; neighbor < graph[current].size(); neighbor++){
+            if (visited[graph[current][neighbor]] == 0) {
+                visited[graph[current][neighbor]] = 1;
+                parent[graph[current][neighbor]] = current;
+                queue.push_back(graph[current][neighbor]);
+            }    
+        }
+	}
+
+	path.push_back(-1);	
+	return path;
+}
+
 
 int main() {
     
@@ -1016,6 +1067,9 @@ int main() {
 		graph.push_back(edges); 
 	}
 
+	std::vector<int> path;
+	path = bfs(graph, graph.size()-2, graph.size()-1);
+
 	cout <<"GRAPH VERTICES: "<< endl;	
 	for(int i = 0; i < graph_vertices.size(); i++){
 		cout << "(" << graph_vertices[i].x << "," << graph_vertices[i].y;
@@ -1034,6 +1088,13 @@ int main() {
 		}
 		if(j == (graph.size() - 1)) {cout << ") "; }
 		else cout << "), ";
+	}
+	cout << endl;
+
+	cout <<"PATH: "<< endl;	
+	for(int i = 0; i < path.size(); i++){
+		cout << path[i];
+		if(i != path.size() - 1) { cout << ", "; }
 	}
 	cout << endl;
 
