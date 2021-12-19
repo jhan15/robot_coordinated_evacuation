@@ -47,10 +47,9 @@ namespace student {
   }
 
   bool planPath(const Polygon& borders, const std::vector<Polygon>& obstacle_list,
-                const std::vector<std::pair<int,Polygon>>& victim_list,
-                const Polygon& gate,
-                const float x, const float y, const float theta, Path& path,
-                const std::string& config_folder){
+                const std::vector<Polygon>& gate_list,
+                const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
+                std::vector<Path>& path, const std::string& config_folder){
 
     //throw std::logic_error( "STUDENT FUNCTION - PLAN PATH - NOT IMPLEMENTED" );
     
@@ -72,9 +71,13 @@ namespace student {
     }
 
     std::cout<<"\n>>>> Gate postion:"<<std::endl;
-    for (const auto &position : gate)
+    for (auto &gate : gate_list)
     {
-      std::cout<<"x="<<position.x<<" y="<<position.y<<std::endl;
+      std::cout<<"Gate:"<<std::endl;
+      for (const auto &position : gate)
+      {
+        std::cout<<"x="<<position.x<<" y="<<position.y<<std::endl;
+      }
     }
 
     std::cout<<"\n>>>> Robot initial postion:"<<std::endl;
@@ -96,6 +99,8 @@ namespace student {
     }
 
     return true; 
+  bool planPath(const Polygon& borders, const std::vector<Polygon>& obstacle_list, const std::vector<Polygon>& gate_list, const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta, std::vector<Path>& path, const std::string& config_folder){
+    throw std::logic_error( "STUDENT FUNCTION - PLAN PATH - NOT IMPLEMENTED" );
   }
 }
 
