@@ -81,7 +81,10 @@ namespace student {
     }
 
     std::cout<<"\n>>>> Robot initial postion:"<<std::endl;
-    std::cout<<"x="<<x<<" y="<<y<<" theta="<<theta<<std::endl;
+    for (int i=0; i<x.size(); i++)
+    {
+      std::cout<<"x="<<x[i]<<" y="<<y[i]<<" theta="<<theta[i]<<std::endl;
+    }
 
 
     // You can test the roadmap here --------------
@@ -92,11 +95,16 @@ namespace student {
     
 
     // A fake path
-    float xc = 0, yc = 1.5, r = 1.4;
     float ds = 0.05;
-    for (float theta = -M_PI/2, s = 0; theta<(-M_PI/2 + 1.2); theta+=ds/r, s+=ds) {
-      path.points.emplace_back(s, xc+r*std::cos(theta), yc+r*std::sin(theta), theta+M_PI/2, 1./r);    
+
+    // fake path for 0 and 1
+    for (float l=0, s=0; l<3; l++, s+=ds) {
+      path[0].points.emplace_back(s, x[0]+ds*l, y[0], 0.0, 0.0);
     }
+    for (float l=0, s=0; l<10; l++, s+=ds) {
+      path[1].points.emplace_back(s, x[1]+ds*l, y[1], 0.0, 0.0);
+    }
+    // no path for 2
 
     return true; 
   }
