@@ -23,7 +23,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
-#include <math.h>
+#include <cmath>
 #include <limits>
 #include <assert.h>
 #include "dubins.h"
@@ -453,7 +453,7 @@ shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax
         }
     }
 
-    if (result.pidx > 0)
+    if (result.pidx > -1)
     {
         originalLength ol = scaleFromStandard(sc_lambda.lambda, sl_best);
         float ks[3] =

@@ -21,7 +21,7 @@
  */
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include "dubins.h"
 
 int main() {

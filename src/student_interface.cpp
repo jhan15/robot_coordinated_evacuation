@@ -3,6 +3,10 @@
 
 #include <stdexcept>
 #include <sstream>
+
+#include <cmath>
+#include "dubins/dubins.h"
+
   
 namespace student {
 
@@ -89,6 +93,27 @@ namespace student {
 
     // You can test the roadmap here --------------
 
+
+
+    // --------------------------------------------
+    
+
+
+    // Test dubins --------------------------------
+
+    // A fake path from roadmap
+    
+
+    robotPos pos0, pos1;
+    pos0.x = 0.0;
+    pos0.y = 0.0;
+    pos0.th = 0;
+    pos1.x = 4.0;
+    pos1.y = 0.0;
+    pos1.th = 0;
+    float Kmax = 1.0;
+
+    shortestDubinsResult result = dubinsShortestPath(pos0, pos1, Kmax, true);
 
 
     // --------------------------------------------
