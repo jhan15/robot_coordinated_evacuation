@@ -471,7 +471,9 @@ shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax
 
         result.curve = createCurve(pos0, ol, ks);
 
-        assert(check(sl_best, sc_ks, sc_lambda.sc));
+        result.dubinsWPList = getDubinsWaypoints(result.curve);
+
+        // assert(check(sl_best, sc_ks, sc_lambda.sc));
 
         if (print)
         {
@@ -503,8 +505,45 @@ shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax
                     result.curve.a3.pos0.th);
             printf("\tL = %.2f\n", result.curve.a3.L);
             printf("\tk = %.2f\n", result.curve.a3.k);
+
+            printf("\nWaypoint list:\n");
+            for (auto it = result.dubinsWPList.begin(); it != result.dubinsWPList.end(); ++it)
+            {
+                printf("x = %.2f\ty = %.2f\ttheta = %.2f\ts = %.2f\tk = %.2f\n",
+                        (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).s, (*it).k);
+            }
         }
     }
 
     return result;
+}
+
+
+//----------------------------------------------------------------
+//          GET DUBINS PATH WAYPOINTS
+//----------------------------------------------------------------
+// Get waypoints of arc
+void getArcWaypoints(dubinsArc arc, vector<dubinsWaypoint>& dubinsWPList)
+{
+    float ds = 0.05;
+    float s = dubinsWPList.empty() ? 0.0 : dubinsWPList.back().s;
+    for (float l=0; l<arc.L; l+=ds)
+    {
+        dubinsWaypoint wpt;
+        wpt.pos = circLine(arc.pos0, l, arc.k);
+        wpt.s = s + l;
+        wpt.k = arc.k;
+        dubinsWPList.push_back(wpt);
+    }
+}
+
+// Get waypoints of curve
+vector<dubinsWaypoint> getDubinsWaypoints(dubinsCurve curve)
+{
+    vector<dubinsWaypoint> dubinsWPList;
+    getArcWaypoints(curve.a1, dubinsWPList);
+    getArcWaypoints(curve.a2, dubinsWPList);
+    getArcWaypoints(curve.a3, dubinsWPList);
+
+    return dubinsWPList;
 }

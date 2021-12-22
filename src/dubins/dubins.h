@@ -20,6 +20,9 @@
  * THE SOFTWARE.
  */
 
+#include <vector>
+using namespace std;
+
 #ifndef DUBINS_H
 #define DUBINS_H
 
@@ -95,10 +98,20 @@ struct primitiveResult
     standardLength sl;
 };
 
+// Define dubins waypoint structure
+struct dubinsWaypoint
+{
+    robotPos pos;
+    float s;
+    float k;
+};
+
+// Define the result structure of finding the shortest dubins path
 struct shortestDubinsResult
 {
     int pidx = -1;
     dubinsCurve curve;
+    vector<dubinsWaypoint> dubinsWPList;
 };
 
 
@@ -174,5 +187,14 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks);
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
 shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print=false);
+
+//----------------------------------------------------------------
+//          GET DUBINS PATH WAYPOINTS
+//----------------------------------------------------------------
+// Get waypoints of arc
+void getArcWaypoints(dubinsArc arc, vector<dubinsWaypoint>& dubinsWPList);
+
+// Get waypoints of curve
+vector<dubinsWaypoint> getDubinsWaypoints(dubinsCurve curve);
 
 #endif /* DUBINS_H */

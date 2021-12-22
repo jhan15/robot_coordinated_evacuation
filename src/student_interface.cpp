@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <iterator>
 
 #include <cmath>
 #include "dubins/dubins.h"
@@ -55,83 +56,40 @@ namespace student {
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
 
-    //throw std::logic_error( "STUDENT FUNCTION - PLAN PATH - NOT IMPLEMENTED" );
-    
-    // Here are the positions of border, gate, obstacles, and robot 
-    std::cout<<"\n>>>> Border postion:"<<std::endl;
-    for (const auto &position : borders)
-    {
-      std::cout<<"x="<<position.x<<" y="<<position.y<<std::endl;
-    }
-
-    std::cout<<"\n>>>> Obstacle postion:"<<std::endl;
-    for (auto &obstacle : obstacle_list)
-    {
-      std::cout<<"Obstacle:"<<std::endl;
-      for (const auto &position : obstacle)
-      {
-        std::cout<<"x="<<position.x<<" y="<<position.y<<std::endl;
-      }
-    }
-
-    std::cout<<"\n>>>> Gate postion:"<<std::endl;
-    for (auto &gate : gate_list)
-    {
-      std::cout<<"Gate:"<<std::endl;
-      for (const auto &position : gate)
-      {
-        std::cout<<"x="<<position.x<<" y="<<position.y<<std::endl;
-      }
-    }
-
-    std::cout<<"\n>>>> Robot initial postion:"<<std::endl;
-    for (int i=0; i<x.size(); i++)
-    {
-      std::cout<<"x="<<x[i]<<" y="<<y[i]<<" theta="<<theta[i]<<std::endl;
-    }
-
-
     // You can test the roadmap here --------------
 
 
 
     // --------------------------------------------
-    
 
 
     // Test dubins --------------------------------
+    float Kmax = 5.0;
 
     // A fake path from roadmap
-    
+    robotPos pos0 = {x[0], y[0], theta[0]};
+    robotPos pos1 = {0.8, 0.6, -M_PI/6};
+    robotPos pos2 = {1.3, 0.96, 0};
 
-    robotPos pos0, pos1;
-    pos0.x = 0.0;
-    pos0.y = 0.0;
-    pos0.th = 0;
-    pos1.x = 4.0;
-    pos1.y = 0.0;
-    pos1.th = 0;
-    float Kmax = 1.0;
+    std::vector<robotPos> rmPos = {pos0, pos1, pos2};
 
-    shortestDubinsResult result = dubinsShortestPath(pos0, pos1, Kmax, true);
+    // Compute the dubins path between two adjacent points
+    for (auto it0 = rmPos.begin(), it1 = std::next(rmPos.begin());
+         it0 != std::prev(rmPos.end()) && it1 != rmPos.end(); ++it0, ++it1)
+    {
+      shortestDubinsResult result = dubinsShortestPath(*it0, *it1, Kmax);
 
+      if (result.pidx > -1){
+        for (auto it = result.dubinsWPList.begin(); it != result.dubinsWPList.end(); ++it){
+          path[0].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+        }
+      }
+    }
 
     // --------------------------------------------
-    
 
-    // A fake path
-    float ds = 0.05;
-
-    // fake path for 0 and 1
-    for (float l=0, s=0; l<3; l++, s+=ds) {
-      path[0].points.emplace_back(s, x[0]+ds*l, y[0], 0.0, 0.0);
-    }
-    for (float l=0, s=0; l<10; l++, s+=ds) {
-      path[1].points.emplace_back(s, x[1]+ds*l, y[1], 0.0, 0.0);
-    }
-    // no path for 2
-
-    return true; 
+    return true;
+    //throw std::logic_error( "STUDENT FUNCTION - PLAN PATH - NOT IMPLEMENTED" );
   }
 }
 
