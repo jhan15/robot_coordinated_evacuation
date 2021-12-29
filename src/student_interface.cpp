@@ -58,9 +58,12 @@ namespace student {
                 std::vector<Path>& path, const std::string& config_folder){
 
     // inflating the obsticales and borders of the arena
-    std::vector<Polygon> inflated_obsticale_list = inflate_obstacles(obstacle_list);
-    const Polygon inflated_borders = inflate_borders(borders);
+    int inflate_value = 10;
     
+    std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value);
+
+    const Polygon inflated_borders = inflate_borders(borders,-inflate_value);
+
     // You can test the roadmap here --------------
 
 

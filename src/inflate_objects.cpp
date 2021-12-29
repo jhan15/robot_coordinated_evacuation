@@ -1,6 +1,6 @@
 #include "inflate_objects.hpp"
 
-const double INT_ROUND = 600.;
+const double enlarge = 600.;
 // for ploting the solution
 int l = 1000;
 cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
@@ -9,48 +9,47 @@ cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
 takes the obsticales in the arena and inflates them to account for the size of the robot
 outputs the inflated obsticales
 */
-std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list){
+std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, int inflate_value){
     std::vector<Polygon> inflated_obsticale_list;
-    const int inflate = 10;
     int px, py;
 
     for (auto &obstacle : obstacle_list) {
-        ClipperLib::Path ClibObsticale;
-        ClipperLib::Paths ClibMergedObs;
+        ClipperLib::Path clib_obsticale;
+        ClipperLib::Paths clib_merged_obs;
 
         // extract obstacle to a clipper object
         for (const auto &position : obstacle) {
-            std::cout << "Obsticale points x: " << position.x << ", y: " << position.y << std::endl;
-            ClibObsticale << ClipperLib::IntPoint(position.x * INT_ROUND, position.y * INT_ROUND);
+            // std::cout << "Obsticale points x: " << position.x << ", y: " << position.y << std::endl;
+            clib_obsticale << ClipperLib::IntPoint(position.x * enlarge, position.y * enlarge);
         }
 
         // applying the offset
         ClipperLib::ClipperOffset co;
-        co.AddPath(ClibObsticale, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
-        co.Execute(ClibMergedObs, inflate);
-        printf("subject size = %d\n",(int)ClibObsticale.size());
+        co.AddPath(clib_obsticale, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
+        co.Execute(clib_merged_obs, inflate_value);
+        // printf("subject size = %d\n",(int)clib_obsticale.size());
         // print results
-        printf("solution size = %d\n",(int)ClibMergedObs.size());
+        // printf("solution size = %d\n",(int)clib_merged_obs.size());
 
         // change the clipper object to a polygon vector format
-        for(const ClipperLib::Path &path : ClibMergedObs){
+        for(const ClipperLib::Path &path : clib_merged_obs){
             Polygon inflated_poly;
             for(const ClipperLib::IntPoint &point: path){
-                double x = point.X / INT_ROUND;
-                double y = point.Y / INT_ROUND;
+                double x = point.X / enlarge;
+                double y = point.Y / enlarge;
                 inflated_poly.emplace_back(x, y);
             }
             inflated_obsticale_list.emplace_back(inflated_poly);
         }
 
         // draw solution
-        for (unsigned j=1; j<ClibObsticale.size(); j++) {
-            cv::line(plot, cv::Point2f(ClibObsticale.at(j-1).X,ClibObsticale.at(j-1).Y), cv::Point2f(ClibObsticale.at(j).X,ClibObsticale.at(j).Y), cv::Scalar(255,0,0), 1);
+        for (unsigned j=1; j<clib_obsticale.size(); j++) {
+            cv::line(plot, cv::Point2f(clib_obsticale.at(j-1).X,clib_obsticale.at(j-1).Y), cv::Point2f(clib_obsticale.at(j).X,clib_obsticale.at(j).Y), cv::Scalar(255,0,0), 1);
         }
-        cv::line(plot, cv::Point2f(ClibObsticale.at(ClibObsticale.size()-1).X,ClibObsticale.at(ClibObsticale.size()-1).Y), cv::Point2f(ClibObsticale.at(0).X,ClibObsticale.at(0).Y), cv::Scalar(255,0,0), 1);
+        cv::line(plot, cv::Point2f(clib_obsticale.at(clib_obsticale.size()-1).X,clib_obsticale.at(clib_obsticale.size()-1).Y), cv::Point2f(clib_obsticale.at(0).X,clib_obsticale.at(0).Y), cv::Scalar(255,0,0), 1);
 
-        for (unsigned i=0; i<ClibMergedObs.size(); i++) {
-            ClipperLib::Path path = ClibMergedObs.at(i);
+        for (unsigned i=0; i<clib_merged_obs.size(); i++) {
+            ClipperLib::Path path = clib_merged_obs.at(i);
             for (unsigned j=1; j<path.size(); j++) {
                 cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
             }
@@ -68,39 +67,39 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
 takes the boarders of the arena and inflates them inward to account for the size of the robot
 outputs the inflated boarders
 */
-Polygon inflate_borders(const Polygon &borders){
+Polygon inflate_borders(const Polygon &borders, int inflate_value){
     Polygon inflated_borders;
     const int inflate = -10;    
 
-    ClipperLib::Path ClibBorder;
-    ClipperLib::Paths ClibInflatedBorder;
+    ClipperLib::Path clib_border;
+    ClipperLib::Paths clib_inflated_border;
 
     // extract borders to a clipper object
     for (const auto &position : borders) {
-        ClibBorder << ClipperLib::IntPoint(position.x * INT_ROUND, position.y * INT_ROUND);
+        clib_border << ClipperLib::IntPoint(position.x * enlarge, position.y * enlarge);
     }
 
     // applying offset to borders 
     ClipperLib::ClipperOffset co;
-    co.AddPath(ClibBorder, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
-    co.Execute(ClibInflatedBorder, inflate);
+    co.AddPath(clib_border, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
+    co.Execute(clib_inflated_border, inflate_value);
 
-    for(const ClipperLib::Path &path : ClibInflatedBorder){
+    for(const ClipperLib::Path &path : clib_inflated_border){
         for(const ClipperLib::IntPoint &point: path){
-            double x = point.X / INT_ROUND;
-            double y = point.Y / INT_ROUND;
+            double x = point.X / enlarge;
+            double y = point.Y / enlarge;
             inflated_borders.emplace_back(x, y);
         }
     }
 
     // draw solution
-    for (unsigned j=1; j<ClibBorder.size(); j++) {
-        cv::line(plot, cv::Point2f(ClibBorder.at(j-1).X,ClibBorder.at(j-1).Y), cv::Point2f(ClibBorder.at(j).X,ClibBorder.at(j).Y), cv::Scalar(255,0,0), 1);
+    for (unsigned j=1; j<clib_border.size(); j++) {
+        cv::line(plot, cv::Point2f(clib_border.at(j-1).X,clib_border.at(j-1).Y), cv::Point2f(clib_border.at(j).X,clib_border.at(j).Y), cv::Scalar(255,0,0), 1);
     }
-    cv::line(plot, cv::Point2f(ClibBorder.at(ClibBorder.size()-1).X,ClibBorder.at(ClibBorder.size()-1).Y), cv::Point2f(ClibBorder.at(0).X,ClibBorder.at(0).Y), cv::Scalar(255,0,0), 1);
+    cv::line(plot, cv::Point2f(clib_border.at(clib_border.size()-1).X,clib_border.at(clib_border.size()-1).Y), cv::Point2f(clib_border.at(0).X,clib_border.at(0).Y), cv::Scalar(255,0,0), 1);
 
-    for (unsigned i=0; i<ClibInflatedBorder.size(); i++) {
-        ClipperLib::Path path = ClibInflatedBorder.at(i);
+    for (unsigned i=0; i<clib_inflated_border.size(); i++) {
+        ClipperLib::Path path = clib_inflated_border.at(i);
         for (unsigned j=1; j<path.size(); j++) {
             cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
         }
@@ -113,3 +112,13 @@ Polygon inflate_borders(const Polygon &borders){
 
     return inflated_borders;
 }
+
+    // for (unsigned i = 0; i< obstacle_list.size(); i++) {
+    //   std::cout << "Obsticale #" << i << std::endl;
+    //   Polygon obstacle = obstacle_list[i];
+    //   Polygon obstacle_after = inflated_obstacle_list[i];
+    //   for (unsigned j = 0; j< obstacle.size(); j++) {
+    //       std::cout << "Obsticale points x: " << obstacle[j].x << ", y: " << obstacle[j].y << std::endl;
+    //       std::cout << "Obsticale points_after x: " << obstacle_after[j].x << ", y: " << obstacle_after[j].y << std::endl;
+    //   }
+    // }
