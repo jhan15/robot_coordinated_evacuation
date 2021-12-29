@@ -1,19 +1,18 @@
-#include "inflateObjects.hpp"
+#include "inflate_objects.hpp"
 
 const double INT_ROUND = 600.;
+// for ploting the solution
+int l = 1000;
+cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
+
 /*
 takes the obsticales in the arena and inflates them to account for the size of the robot
 outputs the inflated obsticales
 */
-std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list, const Polygon &borders){
-    std::vector<Polygon> inflatedObsticales;
+std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list){
+    std::vector<Polygon> inflated_obsticale_list;
     const int inflate = 10;
-    int l = 1000;
-    cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
     int px, py;
-
-    // ClipperLib::Path subj;
-    // ClipperLib::Paths solution;
 
     for (auto &obstacle : obstacle_list) {
         ClipperLib::Path ClibObsticale;
@@ -33,6 +32,17 @@ std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list,
         // print results
         printf("solution size = %d\n",(int)ClibMergedObs.size());
 
+        // change the clipper object to a polygon vector format
+        for(const ClipperLib::Path &path : ClibMergedObs){
+            Polygon inflated_poly;
+            for(const ClipperLib::IntPoint &point: path){
+                double x = point.X / INT_ROUND;
+                double y = point.Y / INT_ROUND;
+                inflated_poly.emplace_back(x, y);
+            }
+            inflated_obsticale_list.emplace_back(inflated_poly);
+        }
+
         // draw solution
         for (unsigned j=1; j<ClibObsticale.size(); j++) {
             cv::line(plot, cv::Point2f(ClibObsticale.at(j-1).X,ClibObsticale.at(j-1).Y), cv::Point2f(ClibObsticale.at(j).X,ClibObsticale.at(j).Y), cv::Scalar(255,0,0), 1);
@@ -48,17 +58,9 @@ std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list,
             cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
 
         }
-
-    //     // add the inflated obstacle to a path
-    //     coo.AddPaths(ClibMergedObs, ClipperLib::ptSubject, true);
-
     }
-    // cv::imshow("Clipper", plot);
-    // cv::waitKey(0); 
-    const Polygon inflatedBorders = inflateBorders(borders, plot);
 
-
-    return inflatedObsticales;
+    return inflated_obsticale_list;
 }
 
 
@@ -66,13 +68,9 @@ std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list,
 takes the boarders of the arena and inflates them inward to account for the size of the robot
 outputs the inflated boarders
 */
-Polygon inflateBorders(const Polygon &borders, cv::Mat &plot){
-    Polygon inflatedBorders;
-    const int inflate = -10;
-    // int l = 1200;
-    // cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
-    // int px, py;
-    
+Polygon inflate_borders(const Polygon &borders){
+    Polygon inflated_borders;
+    const int inflate = -10;    
 
     ClipperLib::Path ClibBorder;
     ClipperLib::Paths ClibInflatedBorder;
@@ -87,6 +85,13 @@ Polygon inflateBorders(const Polygon &borders, cv::Mat &plot){
     co.AddPath(ClibBorder, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
     co.Execute(ClibInflatedBorder, inflate);
 
+    for(const ClipperLib::Path &path : ClibInflatedBorder){
+        for(const ClipperLib::IntPoint &point: path){
+            double x = point.X / INT_ROUND;
+            double y = point.Y / INT_ROUND;
+            inflated_borders.emplace_back(x, y);
+        }
+    }
 
     // draw solution
     for (unsigned j=1; j<ClibBorder.size(); j++) {
@@ -106,5 +111,5 @@ Polygon inflateBorders(const Polygon &borders, cv::Mat &plot){
     cv::imshow("Clipper", plot);
     cv::waitKey(0);    
 
-    return inflatedBorders;
+    return inflated_borders;
 }

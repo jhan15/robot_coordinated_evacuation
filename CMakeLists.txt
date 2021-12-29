@@ -17,9 +17,9 @@ include_directories(
 ## CREATE EXECUTABLE LIBRARY
 add_library(student SHARED
    src/student_interface.cpp
-   src/inflateObjects.cpp
+   src/inflate_objects.cpp
    src/clipper/clipper.cpp
-   src/collisionDetect.cpp
+   src/collision_detect.cpp
    src/dubins/dubins.cpp
    src/roadmap/vertical_cell_decomposition.cpp
 )

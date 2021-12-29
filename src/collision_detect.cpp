@@ -5,27 +5,27 @@
 
 using namespace cv;
 
-std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
-std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line);
+std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
+std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line);
 
 
 
 /*
 function that performs a cross product
 */
-double crossProd(Point2d a, Point2d b){
+double cross_prod(Point2d a, Point2d b){
 	return a.x * b.y - a.y * b.x;
 }
 /*
 function that performs a dot product
 */
-double dotProd(Point2d a, Point2d b){
+double dot_prod(Point2d a, Point2d b){
 	return a.x * b.x + a.y * b.y;
 }
 /*
 checks if 2 lines intersect [collide]. returns a vector of points of intersection if any
 */
-std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point2d> line_b){
+std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b){
     std::vector<Point2d> pts;
 	double t;
 	std::vector<double> ts;
@@ -65,14 +65,14 @@ std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point
 
 	Point2d diffPQ = Point2d(q.x-p.x, q.y-p.y);
 
-	double crossRS = crossProd(r, s);
-	double crossDiffR = crossProd(diffPQ,r);
-   	double crossDiffS = crossProd(diffPQ,s);
+	double crossRS = cross_prod(r, s);
+	double crossDiffR = cross_prod(diffPQ,r);
+   	double crossDiffS = cross_prod(diffPQ,s);
 
    	if(crossRS == 0 && crossDiffR == 0){
-   		double dotRR = dotProd(r,r);
-       	double dotSR = dotProd(s,r);
-       	double t0 = dotProd(diffPQ,r)/dotRR;
+   		double dotRR = dot_prod(r,r);
+       	double dotSR = dot_prod(s,r);
+       	double t0 = dot_prod(diffPQ,r)/dotRR;
        	double t1 = t0+dotSR/dotRR;
        	if(dotSR<0){
        		if(t0>=0 && t0<=1){
@@ -105,7 +105,7 @@ std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point
 /*
 checks if a line and a circle intersect [collide]. returns a vector of points of intersection if any
 */
-std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line){
+std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line){
     std::vector<Point2d> pts;
 	std::vector<double> t;
 
