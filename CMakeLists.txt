@@ -21,6 +21,7 @@ add_library(student SHARED
    src/clipper/clipper.cpp
    src/collisionDetect.cpp
    src/dubins/dubins.cpp
+   src/roadmap/vertical_cell_decomposition.cpp
 )
 
 target_link_libraries(student

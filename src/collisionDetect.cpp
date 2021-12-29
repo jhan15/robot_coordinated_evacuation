@@ -8,14 +8,23 @@ using namespace cv;
 std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
 std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line);
 
+
+
+/*
+function that performs a cross product
+*/
 double crossProd(Point2d a, Point2d b){
 	return a.x * b.y - a.y * b.x;
 }
-
+/*
+function that performs a dot product
+*/
 double dotProd(Point2d a, Point2d b){
 	return a.x * b.x + a.y * b.y;
 }
-
+/*
+checks if 2 lines intersect [collide]. returns a vector of points of intersection if any
+*/
 std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point2d> line_b){
     std::vector<Point2d> pts;
 	double t;
@@ -93,7 +102,9 @@ std::vector<Point2d> LineLineColl(std::vector<Point2d> line_a, std::vector<Point
    	
    	return pts;
 }
-
+/*
+checks if a line and a circle intersect [collide]. returns a vector of points of intersection if any
+*/
 std::vector<Point2d> CircleLineColl(double a, double b, int r, std::vector<Point2d> line){
     std::vector<Point2d> pts;
 	std::vector<double> t;

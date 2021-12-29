@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include "dubins/dubins.h"
+#include "inflateObjects.hpp"
 
   
 namespace student {
@@ -56,6 +57,9 @@ namespace student {
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
 
+    
+    std::vector<Polygon> inflatedObsticales = inflateObstacles(obstacle_list,borders);
+    
     // You can test the roadmap here --------------
 
 

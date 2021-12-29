@@ -1,10 +1,14 @@
 #include "inflateObjects.hpp"
 
+const double INT_ROUND = 600.;
+/*
+takes the obsticales in the arena and inflates them to account for the size of the robot
+outputs the inflated obsticales
+*/
 std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list, const Polygon &borders){
     std::vector<Polygon> inflatedObsticales;
-    const double INT_ROUND = 1000.;
     const int inflate = 10;
-    int l = 1500;
+    int l = 1000;
     cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
     int px, py;
 
@@ -40,6 +44,7 @@ std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list,
             for (unsigned j=1; j<path.size(); j++) {
                 cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
             }
+
             cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
 
         }
@@ -48,18 +53,21 @@ std::vector<Polygon> inflateObstacles(const std::vector<Polygon>& obstacle_list,
     //     coo.AddPaths(ClibMergedObs, ClipperLib::ptSubject, true);
 
     }
-    cv::flip(plot, plot, 0);
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0); 
+    // cv::imshow("Clipper", plot);
+    // cv::waitKey(0); 
     const Polygon inflatedBorders = inflateBorders(borders, plot);
 
 
     return inflatedObsticales;
 }
 
+
+/*
+takes the boarders of the arena and inflates them inward to account for the size of the robot
+outputs the inflated boarders
+*/
 Polygon inflateBorders(const Polygon &borders, cv::Mat &plot){
     Polygon inflatedBorders;
-    const double INT_ROUND = 1000.;
     const int inflate = -10;
     // int l = 1200;
     // cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
@@ -94,7 +102,7 @@ Polygon inflateBorders(const Polygon &borders, cv::Mat &plot){
         cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
 
     }
-    cv::flip(plot, plot, 0);
+    cv::flip(plot, plot, 1);
     cv::imshow("Clipper", plot);
     cv::waitKey(0);    
 
