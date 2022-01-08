@@ -6,7 +6,7 @@
 #include <iterator>
 
 #include <cmath>
-#include "dubins/dubins.h"
+#include "dubins.h"
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
 
@@ -64,6 +64,8 @@ namespace student {
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value);
 
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value);
+
+    cout << "OUT OF INFLATE" << endl;
 
     // You can test the roadmap here --------------
 
@@ -974,7 +976,7 @@ namespace student {
 
     std::vector<int> my_path;
     my_path = bfs(graph, graph.size()-2, graph.size()-1);
-    /*
+    
     cout << endl;
     cout <<"GRAPH VERTICES: "<< endl; 
     for(int i = 0; i < graph_vertices.size(); i++){
@@ -1004,7 +1006,11 @@ namespace student {
       if(i != my_path.size() - 1) { cout << ", "; }
     }
     cout << endl;
-    */
+    
+
+    for (int node = 0; node < my_path.size(); node ++){
+      path[0].points.emplace_back(0, graph_vertices[my_path[node]].x, graph_vertices[my_path[node]].y, 0, 0);
+    }
 
     // --------------------------------------------
 

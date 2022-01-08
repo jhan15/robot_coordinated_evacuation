@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "utils.hpp"
-#include "clipper/clipper.hpp"
+#include "../src/clipper/clipper.hpp"
 
 std::vector<Polygon> inflate_obstacles(const std::vector<Polygon> &obstacle_list,int inflate_value);
 Polygon inflate_borders(const Polygon &borders, int inflate_value);
