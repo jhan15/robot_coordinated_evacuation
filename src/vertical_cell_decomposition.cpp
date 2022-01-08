@@ -5,7 +5,7 @@
 #include <vector>
 #include <math.h>
 #include <algorithm>
-#include "vertical_cell_decomposition.hpp"
+#include "../vertical_cell_decomposition.hpp"
 	
 using namespace std;
 
