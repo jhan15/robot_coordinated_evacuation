@@ -2,14 +2,14 @@
 
 const double enlarge = 600.;
 // for ploting the solution
-int l = 1000;
-cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
+// int l = 1000;
+// cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
 
 /*
 takes the obsticales in the arena and inflates them to account for the size of the robot
 outputs the inflated obsticales
 */
-std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, int inflate_value){
+std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, int inflate_value, cv::Mat plot){
     std::vector<Polygon> inflated_obsticale_list;
     int px, py;
 
@@ -67,7 +67,7 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
 takes the boarders of the arena and inflates them inward to account for the size of the robot
 outputs the inflated boarders
 */
-Polygon inflate_borders(const Polygon &borders, int inflate_value){
+Polygon inflate_borders(const Polygon &borders, int inflate_value, cv::Mat plot){
     Polygon inflated_borders;
     const int inflate = -10;    
 
@@ -106,9 +106,9 @@ Polygon inflate_borders(const Polygon &borders, int inflate_value){
         cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
 
     }
-    cv::flip(plot, plot, 1);
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0);    
+    // cv::flip(plot, plot, 1);
+    // cv::imshow("Clipper", plot);
+    // cv::waitKey(0);    
 
     return inflated_borders;
 }

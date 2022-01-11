@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iterator>
+#include <string> 
 
 #include <cmath>
 #include "dubins.h"
@@ -58,12 +59,17 @@ namespace student {
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
 
+
+    // drawing the solution
+    int l = 1000;        
+    cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
+
     // inflating the obsticales and borders of the arena
     int inflate_value = 10;
     
-    std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value);
+    std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
 
-    const Polygon inflated_borders = inflate_borders(borders,-inflate_value);
+    const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
     cout << "OUT OF INFLATE" << endl;
 
@@ -1012,6 +1018,26 @@ namespace student {
       path[0].points.emplace_back(0, graph_vertices[my_path[node]].x, graph_vertices[my_path[node]].y, 0, 0);
     }
 
+    //drawing the points
+    for (unsigned i=0; i<graph_vertices.size(); i++) {
+      cv::Point2f centerCircle(graph_vertices[i].x*600,graph_vertices[i].y*600);
+      cv::circle(plot, centerCircle, 6,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+      std::string text = std::to_string(i);
+      putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
+    }
+    //drawing the lines
+    for (unsigned i=0; i<graph.size(); i++) {
+      for(unsigned j=0; j<graph[i].size(); j++){
+        cv::line(plot, cv::Point2f(graph_vertices[i].x*600,graph_vertices[i].y*600), cv::Point2f(graph_vertices[graph[i][j]].x*600,graph_vertices[graph[i][j]].y*600), cv::Scalar(255,0,0), 1);
+      }
+    }
+
+
+    //print the path and inflated obsticles
+
+    // cv::flip(plot, plot, 1);
+    cv::imshow("Clipper", plot);
+    cv::waitKey(0);    
     // --------------------------------------------
 
 
