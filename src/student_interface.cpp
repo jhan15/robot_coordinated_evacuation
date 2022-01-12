@@ -65,7 +65,7 @@ namespace student {
     cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
 
     // inflating the obsticales and borders of the arena
-    int inflate_value = 10;
+    int inflate_value = 0;
     
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
 
@@ -79,7 +79,7 @@ namespace student {
 
     std::vector<POINT> boundary;
 
-    for (const auto &position : borders) {
+    for (const auto &position : inflated_borders) {
       temp_point.x = position.x;
       temp_point.y = position.y;
       boundary.push_back(temp_point);
@@ -134,8 +134,8 @@ namespace student {
     std::vector<POINT> obstacle;
     int vertices_num = 0;
 
-    for (int i = 0; i < obstacle_list.size(); i++) {
-      for (const auto &position : obstacle_list[i]) {
+    for (int i = 0; i < inflated_obstacle_list.size(); i++) {
+      for (const auto &position : inflated_obstacle_list[i]) {
         temp_point.x = position.x;
         temp_point.y = position.y;
         temp_point.obs = i;
@@ -1018,20 +1018,50 @@ namespace student {
       path[0].points.emplace_back(0, graph_vertices[my_path[node]].x, graph_vertices[my_path[node]].y, 0, 0);
     }
 
+
+    //drawing the cell decomposition
+    std::vector< std::vector<POINT> > AB;
+    AB.reserve( quad_cells.size() + tri_cells.size() ); // preallocate memory
+    AB.insert( AB.end(), quad_cells.begin(), quad_cells.end() );
+    AB.insert( AB.end(), tri_cells.begin(), tri_cells.end() );
+    std::vector< std::vector<POINT> > ABC;
+    ABC.reserve( AB.size() + other_cells.size() ); // preallocate memory
+    ABC.insert( ABC.end(), AB.begin(), AB.end() );
+    ABC.insert( ABC.end(), other_cells.begin(), other_cells.end() );
+    int output1 = 0;
+    int output2 = 0;
+    int output3 = 0;
+    int enlarge = 600;
+    for (unsigned i=0; i<ABC.size(); i++) {
+      output1 = 0 + (rand() % static_cast<int>(255 - min + 1));
+      output2 = 0 + (rand() % static_cast<int>(255 - min + 1));
+      output3 = 0 + (rand() % static_cast<int>(255 - min + 1));
+      auto color_rand = cv::Scalar(output1,output2,output3);
+      for(unsigned j=1; j<ABC[i].size(); j++){
+        cv::Point2f point_center(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge);
+        // std::cout << ABC[i][j].x << ' ' << ABC[i][j].y << std::endl;
+        cv::circle(plot, point_center, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
+        cv::line(plot, cv::Point2f(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge), cv::Point2f(ABC[i][j].x*enlarge,ABC[i][j].y*enlarge), color_rand, 1);
+      }
+    }
+
     //drawing the points
     for (unsigned i=0; i<graph_vertices.size(); i++) {
-      cv::Point2f centerCircle(graph_vertices[i].x*600,graph_vertices[i].y*600);
+      cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
       cv::circle(plot, centerCircle, 6,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
       std::string text = std::to_string(i);
       putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
     }
-    //drawing the lines
+    //drawing the map_lines
     for (unsigned i=0; i<graph.size(); i++) {
       for(unsigned j=0; j<graph[i].size(); j++){
-        cv::line(plot, cv::Point2f(graph_vertices[i].x*600,graph_vertices[i].y*600), cv::Point2f(graph_vertices[graph[i][j]].x*600,graph_vertices[graph[i][j]].y*600), cv::Scalar(255,0,0), 1);
+        cv::line(plot, cv::Point2f(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge), cv::Point2f(graph_vertices[graph[i][j]].x*enlarge,graph_vertices[graph[i][j]].y*enlarge), cv::Scalar(255,0,0), 1);
       }
     }
-
+    //drawing the path_lines
+    for (unsigned i=1; i<my_path.size(); i++) {
+      cv::line(plot, cv::Point2f(graph_vertices[my_path[i-1]].x*enlarge,graph_vertices[my_path[i-1]].y*enlarge), cv::Point2f(graph_vertices[my_path[i]].x*enlarge,graph_vertices[my_path[i]].y*enlarge), cv::Scalar(50,255,0), 2);
+    }
 
     //print the path and inflated obsticles
 
