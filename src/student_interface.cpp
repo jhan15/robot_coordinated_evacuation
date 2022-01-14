@@ -11,7 +11,8 @@
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
 
-  
+int enlarge = 600;
+
 namespace student {
 
  void loadImage(cv::Mat& img_out, const std::string& config_folder){  
@@ -79,13 +80,12 @@ namespace student {
 
     std::vector<POINT> boundary;
 
-    for (const auto &position : inflated_borders) {
+    for (const auto &position : borders) {
       temp_point.x = position.x;
       temp_point.y = position.y;
       boundary.push_back(temp_point);
     }
 
-    
     //std::cout<<"\n>>>> Border postion:"<<std::endl;
     //for(int i = 0; i < boundary.size(); i++){
     //  cout<< "x=" << boundary[i].x << " y=" << boundary[i].y << endl;
@@ -134,8 +134,8 @@ namespace student {
     std::vector<POINT> obstacle;
     int vertices_num = 0;
 
-    for (int i = 0; i < inflated_obstacle_list.size(); i++) {
-      for (const auto &position : inflated_obstacle_list[i]) {
+    for (int i = 0; i < obstacle_list.size(); i++) {
+      for (const auto &position : obstacle_list[i]) {
         temp_point.x = position.x;
         temp_point.y = position.y;
         temp_point.obs = i;
@@ -174,17 +174,21 @@ namespace student {
         for(int vertex = 0; vertex < obstacles[obj].size(); vertex++) {
           add_to_list = 0;
           if(obstacles[obj][vertex].x > sorted_vertices[curr_vertex].x) { //the x of the vertex is bigger than the current one in this position
-            if (curr_vertex == vertices_num - 1) {add_to_list = 1;} // it is the last vertex or
-            else if (obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x) {add_to_list = 1;} //is smaller than the x of the next vertex
-            else if (obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x) //is the same with the x of the next vertex
-              add_to_list = 1;
-              for(int vert = 0; vert < sorted_vertices.size(); vert ++) {
-                if (sorted_vertices[vert].x == obstacles[obj][vertex].x && sorted_vertices[vert].y == obstacles[obj][vertex].y) {
-                  add_to_list = 0;
-                }
+            if( curr_vertex == vertices_num - 1 ||
+            obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x ||
+            obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x)
+            {add_to_list = 1;}
+            // if (curr_vertex == vertices_num - 1) {add_to_list = 1;} // it is the last vertex or
+            // else if (obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x) {add_to_list = 1;} //is smaller than the x of the next vertex
+            // else if (obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x) {add_to_list = 1;}//is the same with the x of the next vertex
+              
+            for(int vert = 0; vert < sorted_vertices.size(); vert ++) {
+              if (sorted_vertices[vert].x == obstacles[obj][vertex].x && sorted_vertices[vert].y == obstacles[obj][vertex].y) {
+                add_to_list = 0;
               }
             }
-          if(add_to_list) {
+          }
+          if(add_to_list == 1) {
             sorted_vertices[curr_vertex].x = obstacles[obj][vertex].x;
             sorted_vertices[curr_vertex].y = obstacles[obj][vertex].y;
             sorted_vertices[curr_vertex].obs = obj;
@@ -193,12 +197,17 @@ namespace student {
       } 
     }
 
-    
-    //std::cout<<"\n>>>> Sorted vertices:"<<std::endl;
-    //for(int i = 0; i < sorted_vertices.size(); i++){
-    //    cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
-    //}
-    
+    std::cout<< "vertices number: " << vertices_num << std::endl;
+    std::cout<<"\n>>>> Sorted vertices:"<<std::endl;
+    for(int i = 0; i < sorted_vertices.size(); i++){
+       cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
+       cv::Point2f centerCircle(sorted_vertices[i].x*enlarge,sorted_vertices[i].y*enlarge);
+       cv::circle(plot, centerCircle, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
+      //  std::string text = std::to_string(sorted_vertices[i].obs);
+      //  putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
+    }
+    cv::imshow("Clipper", plot);
+    cv::waitKey(0);  
 
     //Determining the vertical lines
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
@@ -214,7 +223,8 @@ namespace student {
       obstacles[obs].push_back(obstacles[obs][0]);
     }
 
-    for(int pt = 0; pt < vertices_num; pt++){
+    for(const POINT& pt : sorted_vertices){
+    // for(int pt = 0; pt < vertices_num; pt++){
       int up = 0;
       int down = 0;
       int break_now = 0;
@@ -223,9 +233,9 @@ namespace student {
       POINT intersection_point;
       SEGMENT temp_segment;
 
-      temp_point.x = sorted_vertices[pt].x;
+      temp_point.x = pt.x;
       temp_point.y = y_limit_lower;
-      temp_point.obs = sorted_vertices[pt].obs;
+      temp_point.obs = pt.obs;
       curr_segment.a = temp_point;
       lower_obs_pt = temp_point;
     
@@ -240,43 +250,82 @@ namespace student {
         for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
           temp_segment.a = obstacles[obs][vertex];
           temp_segment.b = obstacles[obs][vertex + 1];
+          // print for debug
+          // int output7 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+          // int output8 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+          // int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+          // auto color_rand = cv::Scalar(output7,output8,output9);
+          // cv::line(plot, cv::Point2f(curr_segment.a.x*enlarge,curr_segment.a.y*enlarge), cv::Point2f(curr_segment.b.x*enlarge,curr_segment.b.y*enlarge), color_rand, 2);
+          // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 2);
+          // cv::imshow("Clipper", plot);
+          // cv::waitKey(0);
+          // std::cout << "current point: " << "( " << pt.x << ","<< pt.y << ")" << std::endl;
+          intersection_point = segment_intersection(curr_segment, temp_segment,pt);
 
-          intersection_point = intersection(curr_segment, temp_segment);
+          // trial for rounding the points
+          // POINT rounded_intersection_point;
+          // POINT rounded_pt;
+          // rounded_intersection_point.x = static_cast<float>(static_cast<int>(intersection_point.x * 10.)) / 10.;
+          // rounded_intersection_point.y = static_cast<float>(static_cast<int>(intersection_point.y * 10.)) / 10.;
+          // rounded_pt.x = static_cast<float>(static_cast<int>(pt.x * 100.)) / 100.;
+          // rounded_pt.y = static_cast<float>(static_cast<int>(pt.y * 100.)) / 100.;
+          // std::cout << "intersction point: " << "( " << intersection_point.x << ","<< intersection_point.y << ")\n" << std::endl;
 
-          if(intersection_point.x != -1) {
-            //cout << "temp_segment.a " << temp_segment.a.x << " " << temp_segment.a.y << endl;
-            //cout << "temp_segment.b " << temp_segment.b.x << " " << temp_segment.b.y << endl;
-            //cout << "curr_segment.a " << curr_segment.a.x << " " << curr_segment.a.y << endl;
-            //cout << "curr_segment.b " << curr_segment.b.x << " " << curr_segment.b.y << endl;
-            //cout << "intersection_point " << intersection_point.x << " " << intersection_point.y << endl;
-            if(obs == sorted_vertices[pt].obs) {
-              if((intersection_point.x != sorted_vertices[pt].x) || (intersection_point.y != sorted_vertices[pt].y)) {
-                if(intersection_point.y > sorted_vertices[pt].y) {up = 1;}
-                if(intersection_point.y < sorted_vertices[pt].y) {down = 1;}
+          if(intersection_point.x != -1){ // && rounded_intersection_point.x != rounded_pt.x && rounded_intersection_point.y != rounded_pt.y) {
+            
+            // for debugging
+            cv::Point2f point_center2(pt.x*enlarge,pt.y*enlarge);
+            std::string text = std::to_string(pt.obs);
+            putText(plot, text, point_center2, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
+            cv::Point2f point_center(intersection_point.x*enlarge,intersection_point.y*enlarge);
+            cv::circle(plot, point_center, 5,cv::Scalar( 0, 10, 125 ),2);
+            // cv::imshow("Clipper", plot);
+            // cv::waitKey(0);
+            // cout << "temp_segment.a " << temp_segment.a.x << " " << temp_segment.a.y << endl;
+            // cout << "temp_segment.b " << temp_segment.b.x << " " << temp_segment.b.y << endl;
+            // cout << "curr_segment.a " << curr_segment.a.x << " " << curr_segment.a.y << endl;
+            // cout << "curr_segment.b " << curr_segment.b.x << " " << curr_segment.b.y << endl;
+            // cout << "intersection_point " << intersection_point.x << " " << intersection_point.y << endl;
+            if(obs == pt.obs) {
+              if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
+                if(intersection_point.y > pt.y) {up = 1;}
+                if(intersection_point.y < pt.y) {down = 1;}
               }
             }
             else {
-              if((intersection_point.x != sorted_vertices[pt].x) || (intersection_point.y != sorted_vertices[pt].y)) {
-                if((up == 0) && (intersection_point.y > sorted_vertices[pt].y) && (intersection_point.y < upper_obs_pt.y)) {
+              if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
+                if((up == 0) && (intersection_point.y > pt.y) && (intersection_point.y < upper_obs_pt.y)) {
                   upper_obs_pt = intersection_point;
                 }
-                if((down == 0) && (intersection_point.y < sorted_vertices[pt].y) && (intersection_point.y > lower_obs_pt.y)) {
+                if((down == 0) && (intersection_point.y < pt.y) && (intersection_point.y > lower_obs_pt.y)) {
                   lower_obs_pt = intersection_point;
                 }
               }
             }
           }
-        
-          if(up && down) {break_now = 1;}
+          if(up && down) {
+            std::cout << "no way this will get triggered" << std::endl;
+            break_now = 1;
+            break;
+          }
         }
         
         if(break_now) {break;}
       }
 
-      temp_point.x = -1;
-      temp_point.y = -1;
-      temp_segment.a = temp_point;
-      temp_segment.b = temp_point;
+      // printing for debugging
+      // std::cout << "=========================" << std::endl;
+      if(down == 0){
+          cv::line(plot, cv::Point2f(lower_obs_pt.x*enlarge,lower_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
+      }
+      if(up == 0){
+        cv::line(plot, cv::Point2f(upper_obs_pt.x*enlarge,upper_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
+      }
+      cv::imshow("Clipper", plot);
+      cv::waitKey(0);
+
+      temp_point = {-1,-1};
+      temp_segment = {temp_point,temp_point};
 
       if(up && down) {
       //temp_segment default values of -1 remain unchanged
@@ -292,11 +341,14 @@ namespace student {
         temp_segment.a = lower_obs_pt;  
       } 
       open_line_segments.push_back(temp_segment);
+
+
+
     }
 
-    //for(int i = 0; i < open_line_segments.size(); i++){
-    //  cout << "A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << endl; 
-    //}
+    for(int i = 0; i < open_line_segments.size(); i++){
+     cout << "A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << endl; 
+    }
 
     //Finding cells
     POINT curr_vertex;
@@ -639,12 +691,55 @@ namespace student {
           }
           if(found == 0) {
             cells.push_back(trapezoids[line]);
+
+            // debug for printing the cells one by one
+            int output4 = 0;
+            int output5 = 0;
+            int output6 = 0;
+            output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            auto color_rand = cv::Scalar(output4,output5,output6);
+            for(unsigned j=1; j<cells[cells.size()-1].size(); j++){
+              cv::Point2f point_center(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge);
+              cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8); 
+              cv::line(plot, cv::Point2f(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge), cv::Point2f(cells[cells.size()-1][j].x*enlarge,cells[cells.size()-1][j].y*enlarge), color_rand, 1);
+            }
+            cv::Point2f point_center(cells[cells.size()-1][cells[cells.size()-1].size()-1].x*enlarge,cells[cells.size()-1][cells[cells.size()-1].size()-1].y*enlarge);
+            cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8);
+            std::cout << cells[cells.size()-1][cells[cells.size()-1].size()-1].x * enlarge << endl;
+            std::cout << cells[cells.size()-1][cells[cells.size()-1].size()-1].y * enlarge << endl;
+            std::cout << cells[cells.size()-1][0].x * enlarge << endl;
+            std::cout << cells[cells.size()-1][0].y * enlarge << endl;
+            // cv::line(plot, cv::Point2f(cells[cells.size()-1][cells[cells.size()-1].size()-1].x*enlarge,cells[cells.size()-1][cells[cells.size()-1].size()-1].y*enlarge), cv::Point2f(cells[cells.size()-1][0].x,cells[cells.size()-1][0].y), color_rand, 1);
+            cv::imshow("Clipper", plot);
+            cv::waitKey(0);  
           } 
         }
 
         if(done[0] && done[1] && done[2]) break;
       }
     }
+
+    // int output4 = 0;
+    // int output5 = 0;
+    // int output6 = 0;
+    // int enlarge = 600;
+    // std::cout << "cell size " << cells.size() << std::endl;
+    // for (unsigned i=0; i<cells.size(); i++) {
+    //   output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   auto color_rand = cv::Scalar(output4,output5,output6);
+    //   for(unsigned j=1; j<cells[i].size(); j++){
+    //     cv::Point2f point_center(cells[i][j-1].x*enlarge,cells[i][j-1].y*enlarge);
+    //     // std::cout << ABC[i][j].x << ' ' << ABC[i][j].y << std::endl;
+    //     cv::circle(plot, point_center, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
+    //     cv::line(plot, cv::Point2f(cells[i][j-1].x*enlarge,cells[i][j-1].y*enlarge), cv::Point2f(cells[i][j].x*enlarge,cells[i][j].y*enlarge), color_rand, 1);
+    //   }
+    //   cv::line(plot, cv::Point2f(cells[i][cells.size()-1].x*enlarge,cells[i][cells.size()-1].y*enlarge), cv::Point2f(cells[i][0].x,cells[i][0].y), color_rand, 1);
+    // }
+
 
     //Merge overlapping polygons
     std::vector< std::vector<POINT> > quad_cells; 
@@ -656,6 +751,25 @@ namespace student {
       else if(cells[cell].size() == 3) {tri_cells.push_back(cells[cell]);}
       else {other_cells.push_back(cells[cell]);}
     }
+
+// print out debug
+    // int output4 = 0;
+    // int output5 = 0;
+    // int output6 = 0;
+    // int enlarge = 600;
+    // std::cout << "quad cell size" << quad_cells.size() << std::endl;
+    // for (unsigned i=0; i<quad_cells.size(); i++) {
+    //   output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   auto color_rand = cv::Scalar(output4,output5,output6);
+    //   for(unsigned j=1; j<quad_cells[i].size(); j++){
+    //     cv::Point2f point_center(quad_cells[i][j-1].x*enlarge,quad_cells[i][j-1].y*enlarge);
+    //     // std::cout << ABC[i][j].x << ' ' << ABC[i][j].y << std::endl;
+    //     cv::circle(plot, point_center, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
+    //     cv::line(plot, cv::Point2f(quad_cells[i][j-1].x*enlarge,quad_cells[i][j-1].y*enlarge), cv::Point2f(quad_cells[i][j].x*enlarge,quad_cells[i][j].y*enlarge), color_rand, 1);
+    //   }
+    // }
 
     std::vector<int> quads_to_remove;
     std::vector< std::vector<POINT> > quads_to_add;
@@ -1031,11 +1145,11 @@ namespace student {
     int output1 = 0;
     int output2 = 0;
     int output3 = 0;
-    int enlarge = 600;
+    // int enlarge = 600;
     for (unsigned i=0; i<ABC.size(); i++) {
-      output1 = 0 + (rand() % static_cast<int>(255 - min + 1));
-      output2 = 0 + (rand() % static_cast<int>(255 - min + 1));
-      output3 = 0 + (rand() % static_cast<int>(255 - min + 1));
+      output1 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+      output2 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+      output3 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
       auto color_rand = cv::Scalar(output1,output2,output3);
       for(unsigned j=1; j<ABC[i].size(); j++){
         cv::Point2f point_center(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge);

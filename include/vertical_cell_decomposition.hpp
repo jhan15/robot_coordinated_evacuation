@@ -24,6 +24,11 @@ struct SEGMENT {
 };
 
 POINT intersection(SEGMENT segment1, SEGMENT segment2);
+float determinant( POINT a , POINT b);
+bool counter_clockwise(POINT A,POINT B,POINT C);
+bool intersect(POINT A,POINT B,POINT C,POINT D);
+POINT line_intersection(POINT A, POINT B, POINT C, POINT D) ;
+POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,POINT pt);
 POINT centroid(std::vector<POINT> vertices);
 float polygon_area(std::vector<POINT> vertices, int vertices_num);
 float find_dist(POINT pt1, POINT pt2);

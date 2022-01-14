@@ -13,11 +13,22 @@ using namespace std;
 POINT intersection(SEGMENT segment1, SEGMENT segment2) {   
     POINT intersection_point;
 
+    // if ((segment1.a.x == segment2.a.x && segment1.a.y == segment2.a.y) ||
+    // (segment1.b.x == segment2.b.x && segment1.b.y == segment2.b.y) ||
+    // (segment1.a.x == segment2.b.x && segment1.a.y == segment2.b.y) ||
+    // (segment1.b.x == segment2.a.x && segment1.b.y == segment2.a.y)){
+    //     std::cout << "hi" << std::endl;
+	// 	intersection_point.x = (-1);
+    // 	intersection_point.y = (-1);
+    //     return intersection_point;
+    // }
+
     float d = (segment1.a.x - segment1.b.x) * (segment2.a.y - segment2.b.y) - (segment1.a.y - segment1.b.y) * (segment2.a.x - segment2.b.x);
 
     if (d == 0) {
 		intersection_point.x = (-1);
     	intersection_point.y = (-1);
+        return intersection_point;
     }
 
     // Get the x and y
@@ -29,18 +40,93 @@ POINT intersection(SEGMENT segment1, SEGMENT segment2) {
     if ( int(1000000*x) < int(1000000*min(segment1.a.x, segment1.b.x)) || int(1000000*x) > int(1000000*max(segment1.a.x, segment1.b.x)) || int(1000000*x) < int(1000000*min(segment2.a.x, segment2.b.x)) || int(1000000*x) > int(1000000*max(segment2.a.x, segment2.b.x)) ) {
 		intersection_point.x = (-1);
     	intersection_point.y = (-1);
+        return intersection_point;
     }
-    else if ( int(1000000*y) < int(1000000*min(segment1.a.y, segment1.b.y)) || int(1000000*y) > int(1000000*max(segment1.a.y, segment1.b.y)) || int(1000000*y) < int(1000000*min(segment2.a.y, segment2.b.y)) || int(1000000*y) > int(1000000*max(segment2.a.y, segment2.b.y)) ) {
+    if ( int(1000000*y) < int(1000000*min(segment1.a.y, segment1.b.y)) || int(1000000*y) > int(1000000*max(segment1.a.y, segment1.b.y)) || int(1000000*y) < int(1000000*min(segment2.a.y, segment2.b.y)) || int(1000000*y) > int(1000000*max(segment2.a.y, segment2.b.y)) ) {
 		intersection_point.x = (-1);
     	intersection_point.y = (-1);
+        return intersection_point;
     }
-    else {
-        intersection_point.x = x; //(int(x+0.5));
-        intersection_point.y = y; //(int(y+0.5));
-    }
+
+    intersection_point.x = x; //(int(x+0.5));
+    intersection_point.y = y; //(int(y+0.5));
+
 
     return intersection_point;
 }
+
+float determinant( POINT a , POINT b){
+    return float ( (a.x * b.y) - (a.y * b.x) );
+}
+
+bool counter_clockwise(POINT A,POINT B,POINT C){
+    // std::cout << "counter_clock wise output: " << ((C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)) << std::endl;
+    return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x);
+}
+
+bool intersect(POINT A,POINT B,POINT C,POINT D){
+    //Check if any three points are co-linear
+
+    
+    if( ( (A.x * (B.y - C.y) ) + (B.x * (C.y - A.y) ) + (C.x * (A.y - B.y) ) )== 0 ){
+        return true;
+    }
+    if( ( (A.x * (B.y - D.y) ) + (B.x * (D.y - A.y) ) + (D.x * (A.y - B.y) ) )== 0 ){
+        return true;
+    }
+    if( ( (A.x * (C.y - D.y) ) + (C.x * (D.y - A.y) ) + (D.x * (A.y - C.y) ) )== 0 ){
+        return true;
+    }
+    if( ( (B.x * (C.y - D.y) ) + (C.x * (D.y - B.y) ) + (D.x * (B.y - C.y) ) )== 0 ){
+        return true;
+    }   
+    
+    return counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D);
+}
+POINT line_intersection(POINT A, POINT B, POINT C, POINT D) { 
+    POINT inter_p;
+    POINT x_diff = {A.x - B.x , C.x - D.x};
+    POINT y_diff = {A.y - B.y , C.y - D.y};
+    float div = determinant(x_diff, y_diff);
+
+    if (div == 0){
+        inter_p = {-1,-1};
+        return inter_p;
+    }
+    float h1 = determinant(A,B);
+    float h2 = determinant(C,D);
+    POINT d = {h1,h2};
+    float x = determinant(d,x_diff) / div;
+    float y = determinant(d, y_diff) / div;
+
+    inter_p = {x,y};
+    // std::cout << "intersection point: " << inter_p.x << inter_p.y << std::endl;
+    return inter_p;
+    }
+POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2, POINT cur_pt){
+    POINT intersection_p = {-1,-1};
+    POINT a = sigment1.a;
+    POINT b = sigment1.b;
+    POINT c = sigment2.a;
+    POINT d = sigment2.b;
+    // check if the current vertex of the obsticale is equal to any of the sigment points
+    // this is to stop counting the current vertex as an intersection
+    if((a.x == cur_pt.x && a.y == cur_pt.y) ||
+     (b.x == cur_pt.x && b.y == cur_pt.y) || 
+     (c.x == cur_pt.x && c.y == cur_pt.y) ||
+     (d.x == cur_pt.x && d.y == cur_pt.y)){
+        return intersection_p;
+     }
+
+    if( intersect(a, b, c, d) == true){
+        return line_intersection(a, b, c, d);
+    }
+    return intersection_p;  
+
+}
+
+
+
 
 //Finding the centroid of a list of vertices
 POINT centroid(std::vector<POINT> vertices) {   
