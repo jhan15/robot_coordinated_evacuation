@@ -55,88 +55,6 @@ POINT intersection(SEGMENT segment1, SEGMENT segment2) {
     return intersection_point;
 }
 
-float determinant( POINT a , POINT b){
-    return float ( (a.x * b.y) - (a.y * b.x) );
-}
-
-bool counter_clockwise(POINT A,POINT B,POINT C){
-    // std::cout << "counter_clock wise output: " << ((C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)) << std::endl;
-    return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x);
-}
-
-bool intersect(POINT A,POINT B,POINT C,POINT D){
-    //Check if any three points are co-linear
-
-    // if (print){
-    //     std::cout << "-c1: " << ( ( (A.x * (B.y - C.y) ) + (B.x * (C.y - A.y) ) + (C.x * (A.y - B.y) ) )== 0 ) << std::endl;
-    //     std::cout << "-c2: " << ( ( (A.x * (B.y - D.y) ) + (B.x * (D.y - A.y) ) + (D.x * (A.y - B.y) ) )== 0 ) << std::endl;
-    //     std::cout << "-c3: " << ( ( (A.x * (C.y - D.y) ) + (C.x * (D.y - A.y) ) + (D.x * (A.y - C.y) ) )== 0 ) << std::endl;
-    //     std::cout << "-c4: " << ( ( (B.x * (C.y - D.y) ) + (C.x * (D.y - B.y) ) + (D.x * (B.y - C.y) ) )== 0 ) << std::endl;
-    //     std::cout << "-c5: " << (counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D)) << std::endl;
-    // }
-    if( ( (A.x * (B.y - C.y) ) + (B.x * (C.y - A.y) ) + (C.x * (A.y - B.y) ) )== 0 ){
-        return true;
-    }
-    if( ( (A.x * (B.y - D.y) ) + (B.x * (D.y - A.y) ) + (D.x * (A.y - B.y) ) )== 0 ){
-        return true;
-    }
-    if( ( (A.x * (C.y - D.y) ) + (C.x * (D.y - A.y) ) + (D.x * (A.y - C.y) ) )== 0 ){
-        return true;
-    }
-    if( ( (B.x * (C.y - D.y) ) + (C.x * (D.y - B.y) ) + (D.x * (B.y - C.y) ) )== 0 ){
-        return true;
-    }   
-
-    return counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D);;
-}
-POINT line_intersection(POINT A, POINT B, POINT C, POINT D) { 
-    POINT inter_p;
-    POINT x_diff = {A.x - B.x , C.x - D.x};
-    POINT y_diff = {A.y - B.y , C.y - D.y};
-    float div = determinant(x_diff, y_diff);
-
-    if (div == 0){
-        inter_p = {-1,-1};
-        return inter_p;
-    }
-    float h1 = determinant(A,B);
-    float h2 = determinant(C,D);
-    POINT d = {h1,h2};
-    float x = determinant(d,x_diff) / div;
-    float y = determinant(d, y_diff) / div;
-
-    inter_p = {x,y};
-    // std::cout << "intersection point: " << inter_p.x << inter_p.y << std::endl;
-    return inter_p;
-    }
-POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2){
-    POINT intersection_p = {-1,-1};
-    POINT a = sigment1.a;
-    POINT b = sigment1.b;
-    POINT c = sigment2.a;
-    POINT d = sigment2.b;
-    // check if the current vertex of the obsticale is equal to any of the sigment points
-    // this is to stop counting the current vertex as an intersection
-    // if((a.x == cur_pt.x && a.y == cur_pt.y) ||
-    //  (b.x == cur_pt.x && b.y == cur_pt.y) || 
-    //  (c.x == cur_pt.x && c.y == cur_pt.y) ||
-    //  (d.x == cur_pt.x && d.y == cur_pt.y)){
-    //     return intersection_p;
-    //  }
-    // std::cout << "-- the intersect call func result: " << (intersect(a, b, c, d,false)) << std::endl;
-    
-    
-    
-    if( intersect(a, b, c, d)){
-        return line_intersection(a, b, c, d);
-    }
-    return intersection_p;  
-
-}
-
-
-
-
 //Finding the centroid of a list of vertices
 POINT centroid(std::vector<POINT> vertices) {   
 
@@ -182,15 +100,17 @@ int check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segme
     int break_out = 0;
     int n;
     SEGMENT obs_side;
+
     for(int obs = 0; obs < obstacles.size(); obs++) {
         n = obstacles[obs].size()-1;
+        // check that the obstacle starts and ends with the same point
         if((obstacles[obs][n].x != obstacles[obs][0].x) || (obstacles[obs][n].y != obstacles[obs][0].y)) {
             obstacles[obs].push_back(obstacles[obs][0]);
         }
         for(int pt = 0; pt < (obstacles[obs].size()-1); pt++) {
         	obs_side.a = obstacles[obs][pt];
         	obs_side.b = obstacles[obs][pt+1];
-            if ((intersection(segment, obs_side)).x != -1) {            	
+            if ((segment_intersection(segment, obs_side,false)).x != -1) {            	
                 res = 0;
                 break_out = 1;
                 break;
@@ -205,16 +125,12 @@ int check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segme
 
 std::vector<int> backtrace(std::vector<int> parent, int start, int end) {
 	std::vector<int> path;
-	std::vector<int> temp_path;
-    temp_path.push_back(end);
+    path.push_back(end);
 
-    while (temp_path[temp_path.size()-1] != start) {
-        temp_path.push_back(parent[temp_path[temp_path.size()-1]]);
+    while (path[path.size()-1] != start) {
+        path.push_back(parent[path[path.size()-1]]);
     }
-
-    for(int i = temp_path.size() - 1; i >= 0; i--){
-    	path.push_back(temp_path[i]);
-    }
+    std::reverse(path.begin(),path.end());
 
     return path;
 }
@@ -227,29 +143,111 @@ std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int targ
 	std::vector<int> queue;
 	int current;
 
-	int size = graph.size();
-	for(int node = 0; node < size; node++){
+	for(int node = 0; node < graph.size(); node++){
 		visited.push_back(0);
 		parent.push_back(-1);
 	}
-
 	queue.push_back(source);
 	while(queue.size() > 0){
+        // std::cout << "in queue now:" << std::endl;
+        // for (int i = 0; i<queue.size();i++){
+        //     std::cout  << queue[i] << " , ";
+        // }
+        // std::cout << "\n--------------" << std::endl;
+
 		current = queue[0];
 		queue.erase(queue.begin());
 		if (current == target) {
 			path = backtrace(parent, source, target);
 			return path;
 		}
-		for (int neighbor = 0; neighbor < graph[current].size(); neighbor++){
-            if (visited[graph[current][neighbor]] == 0) {
-                visited[graph[current][neighbor]] = 1;
-                parent[graph[current][neighbor]] = current;
-                queue.push_back(graph[current][neighbor]);
-            }    
+        for (int neighbor : graph[current]){
+            if(visited[neighbor] == 0){
+                visited[neighbor] = 1;
+                parent[neighbor] = current;
+                queue.push_back(neighbor);
+            }
         }
 	}
 
 	path.push_back(-1);	
 	return path;
+}
+
+// function that returns the determinant of a 2x2 matrix
+float determinant( POINT a , POINT b){
+    return float ( (a.x * b.y) - (a.y * b.x) );
+}
+
+bool counter_clockwise(POINT A,POINT B,POINT C){
+    return double ((C.y-A.y) * (B.x-A.x)) > double ((B.y-A.y) * (C.x-A.x));
+}
+
+// function to test if two lines intersect. returns true if they are
+bool intersect(POINT A,POINT B,POINT C,POINT D,bool print = false){
+    //Check if any three points are co-linear
+
+    float t1 = double(A.x * (B.y - C.y)) + double(B.x * (C.y - A.y)) + double(C.x * (A.y - B.y));
+    float t2 = double(A.x * (B.y - D.y)) + double(B.x * (D.y - A.y)) + double(D.x * (A.y - B.y));
+    float t3 = double(A.x * (C.y - D.y)) + double(C.x * (D.y - A.y)) + double(D.x * (A.y - C.y));
+    float t4 = double(B.x * (C.y - D.y)) + double(C.x * (D.y - B.y)) + double(D.x * (B.y - C.y));
+
+    if (print){
+        std::cout << "-t1: " <<  t1 << " -> " << (t1 == 0)  << std::endl;
+        std::cout << "-t2: " <<  t2 << " -> " << (t2 == 0)  << std::endl;
+        std::cout << "-t3: " <<  t3 << " -> " << (t3 == 0)  << std::endl;
+        std::cout << "-t4: " <<  t4 << " -> " << (t4 == 0)  << std::endl;
+        std::cout << "-t5: " << (counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D)) << std::endl;
+    }
+    // if statements to check if any 3 points are co-linear
+    // if( t1 == 0 || t2 == 0 || t3 == 0 || t4 ==0){
+    //     return true;
+    // }
+
+    return counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D);;
+}
+
+// calculates the point of intersection between two lines
+// must be only triggered if the two lines are infact intersecting
+POINT line_intersection(POINT A, POINT B, POINT C, POINT D) { 
+    POINT inter_p = {-1,-1};
+
+    POINT x_diff = {A.x - B.x , C.x - D.x};
+    POINT y_diff = {A.y - B.y , C.y - D.y};
+    float div = determinant(x_diff, y_diff);
+
+    if (div == 0){
+        return inter_p;
+    }
+    float h1 = determinant(A,B);
+    float h2 = determinant(C,D);
+    POINT d = {h1,h2};
+    float x = determinant(d,x_diff) / div;
+    float y = determinant(d, y_diff) / div;
+
+    inter_p = {x,y};
+    // std::cout << "intersection point: " << inter_p.x << inter_p.y << std::endl;
+    return inter_p;
+    }
+
+// function to test if two segments of line are intersecting
+// if they are not, it returns a point of -1. if they are, it calcuates the intersection point
+POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print = false){
+    POINT intersection_p = {-1,-1};
+    POINT a = sigment1.a;
+    POINT b = sigment1.b;
+    POINT c = sigment2.a;
+    POINT d = sigment2.b;
+    int enlarge = 600;
+
+    if (print){
+        std::cout << "-- a: (" << a.x*enlarge << "," << a.y*enlarge << ") b: (" << b.x*enlarge << "," << b.y*enlarge << ")" << std::endl;
+        std::cout << "-- c: (" << c.x*enlarge << "," << c.y*enlarge << ") d: (" << d.x*enlarge << "," << d.y*enlarge << ")" << std::endl;
+        std::cout << "-- the intersect call func result: " << (intersect(a, b, c, d)) << std::endl;
+    }
+    
+    if( intersect(a, b, c, d,print)){
+        return line_intersection(a, b, c, d);
+    }
+    return intersection_p;  
 }
