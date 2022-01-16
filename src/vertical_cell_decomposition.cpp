@@ -94,11 +94,11 @@ bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segm
 
     for(std::vector<POINT> &obs : obstacles){
         // check that the obstacle starts and ends with the same point
-        n = obs.size()-1;
-        if(obs[0].x != obs[n].x){
+        
+        if(obs[0].x != obs.back().x || obs[0].y != obs.back().y){
             obs.push_back(obs[0]);
-            n+=1;
         }
+        n = obs.size()-1;
         for (int pt = 0; pt < n; pt++ ){
             obs_side.a = obs[pt];
             obs_side.b = obs[pt+1];
@@ -112,7 +112,7 @@ bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segm
             break;
         }
     }
-    std::cout << "intersection result: " << res << "\n -----" << std::endl;
+    // std::cout << "intersection result: " << res << "\n -----" << std::endl;
 
     return res;
 }

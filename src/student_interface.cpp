@@ -79,13 +79,13 @@ namespace student {
     cv::Mat plot(l - 300,l, CV_8UC3, cv::Scalar(255,255,255));
 
     // inflating the obsticales and borders of the arena
-    int inflate_value = 0;
+    float inflate_value = 0;
     
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
 
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
-
+    // inflated_obstacle_list =  merge_obstacles(inflated_obstacle_list,inflated_borders, plot);
 
     // TO DO: implement a function to merge the obstacles that are over lapping
     // TO DO: delete all the vertcices outside of the borders
@@ -96,19 +96,17 @@ namespace student {
     POINT temp_point;
 
     std::vector<POINT> boundary;
+    std::vector<POINT> boundary2;
 
-    for (const auto &position : borders) {
-      temp_point.x = position.x;
-      temp_point.y = position.y;
-      boundary.push_back(temp_point);
+    for (const auto &position : inflated_borders) {
+      boundary.push_back({position.x,position.y});
     }
 
-    //std::cout<<"\n>>>> Border postion:"<<std::endl;
-    //for(int i = 0; i < boundary.size(); i++){
-    //  cout<< "x=" << boundary[i].x << " y=" << boundary[i].y << endl;
-    //}
-    
-
+    // std::cout<<"\n>>>> Border postion:"<<std::endl;
+    // for(int i = 0; i < boundary.size(); i++){
+    //  cout<< "x=" << boundary[i].x*enlarge << " y=" << boundary[i].y*enlarge << endl;
+    // }
+ 
     std::vector<POINT> start_point;
 
     for (int i = 0; i < x.size(); i++) {
@@ -151,8 +149,8 @@ namespace student {
     std::vector<POINT> obstacle;
     int vertices_num = 0;
 
-    for (int i = 0; i < obstacle_list.size(); i++) { // change to inflated_obstacle_list later
-      for (const auto &position : obstacle_list[i]) { // change to inflated_obstacle_list later
+    for (int i = 0; i < inflated_obstacle_list.size(); i++) { // change to inflated_obstacle_list later
+      for (const auto &position : inflated_obstacle_list[i]) { // change to inflated_obstacle_list later
         temp_point.x = position.x;
         temp_point.y = position.y;
         temp_point.obs = i;
@@ -235,7 +233,11 @@ namespace student {
 
     //add the first point of the obstacle to the end to close the polygon
     for(int obs = 0; obs < obstacles.size(); obs++) {
-      obstacles[obs].push_back(obstacles[obs][0]);
+      //check if it has already been added
+      if(obstacles[obs][0].x != obstacles[obs].back().x ||
+      obstacles[obs][0].x != obstacles[obs].back().x ){
+        obstacles[obs].push_back(obstacles[obs][0]);
+      }
     }
     float prev_x = -1;
 
@@ -1190,6 +1192,7 @@ namespace student {
       temp_segment.a = start_point[0]; //TODO: change for more than one robot
       temp_segment.b = graph_vertices[vertex];
 
+      //printing the points that are measured to the start point
       // int output10 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
       // int output11 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
       // int output12 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
