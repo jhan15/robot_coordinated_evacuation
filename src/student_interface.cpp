@@ -171,8 +171,7 @@ namespace student {
     //    cout<< "x=" << obstacles[i][j].x << " y=" << obstacles[i][j].y << endl;
     //  }
     //}
-    
-
+  
     //sorting the vertices by their x value in increasing order
     std::vector<POINT> sorted_vertices;
 
@@ -195,10 +194,7 @@ namespace student {
             obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x ||
             obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x)
             {add_to_list = 1;}
-            // if (curr_vertex == vertices_num - 1) {add_to_list = 1;} // it is the last vertex or
-            // else if (obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x) {add_to_list = 1;} //is smaller than the x of the next vertex
-            // else if (obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x) {add_to_list = 1;}//is the same with the x of the next vertex
-              
+
             for(int vert = 0; vert < sorted_vertices.size(); vert ++) {
               if (sorted_vertices[vert].x == obstacles[obj][vertex].x && sorted_vertices[vert].y == obstacles[obj][vertex].y) {
                 add_to_list = 0;
@@ -216,6 +212,8 @@ namespace student {
 
     std::cout<< "vertices number: " << vertices_num << std::endl;
     // std::cout<<"\n>>>> Sorted vertices:"<<std::endl;
+
+    //print out the vertices of the obstacles
     for(int i = 0; i < sorted_vertices.size(); i++){
       //  cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
        cv::Point2f centerCircle(sorted_vertices[i].x*enlarge,sorted_vertices[i].y*enlarge);
@@ -239,8 +237,16 @@ namespace student {
     for(int obs = 0; obs < obstacles.size(); obs++) {
       obstacles[obs].push_back(obstacles[obs][0]);
     }
+    float prev_x = -1;
 
     for(const POINT& pt : sorted_vertices){
+      // to ignore this pt if the previous pt was not that far away
+      // std::cout << "previous x:" << prev_x << " current x: " << pt.x << " difference: " << (pt.x-prev_x) << std::endl;
+      // if (prev_x != -1 && prev_x != pt.x && (pt.x-prev_x < 0.0003) ){
+      //   continue;
+      // }
+
+      prev_x = pt.x;
       int up = 0;
       int down = 0;
       int break_now = 0;
@@ -248,7 +254,7 @@ namespace student {
       POINT upper_obs_pt;
       POINT intersection_point;
       SEGMENT temp_segment;
-
+      
       temp_point.x = pt.x;
       temp_point.y = y_limit_lower;
       temp_point.obs = pt.obs;
@@ -259,8 +265,8 @@ namespace student {
       curr_segment.b = temp_point;
       upper_obs_pt = temp_point;
 
-      //cout << "lower_obs_pt " << lower_obs_pt.x << " " << lower_obs_pt.y << endl;
-      //cout << "upper_obs_pt " << upper_obs_pt.x << " " << upper_obs_pt.y << endl;
+     
+    
 
       for(int obs = 0; obs < obstacles.size(); obs++) { 
         for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
@@ -289,9 +295,8 @@ namespace student {
             intersection_point = segment_intersection(curr_segment, temp_segment,false);
           }
 
-          if(intersection_point.x != -1){ // && rounded_intersection_point.x != rounded_pt.x && rounded_intersection_point.y != rounded_pt.y) {
-            
-            // for debugging
+          if(intersection_point.x != -1){ 
+            // printing the intersection points of the vertical lines with the obstacles and showing whats left from them
             // cv::Point2f point_center2(pt.x*enlarge,pt.y*enlarge);
             // std::string text = std::to_string(pt.obs);
             // putText(plot, text, point_center2, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
@@ -299,11 +304,11 @@ namespace student {
             // cv::circle(plot, point_center, 5,cv::Scalar( 0, 10, 125 ),2);
             // cv::imshow("Clipper", plot);
             // cv::waitKey(0);
-            // cout << "temp_segment.a " << temp_segment.a.x << " " << temp_segment.a.y << endl;
-            // cout << "temp_segment.b " << temp_segment.b.x << " " << temp_segment.b.y << endl;
-            // cout << "curr_segment.a " << curr_segment.a.x << " " << curr_segment.a.y << endl;
-            // cout << "curr_segment.b " << curr_segment.b.x << " " << curr_segment.b.y << endl;
-            // cout << "intersection_point " << intersection_point.x << " " << intersection_point.y << endl;
+            // std::cout << "temp_segment.a " << temp_segment.a.x << " " << temp_segment.a.y << endl;
+            // std::cout << "temp_segment.b " << temp_segment.b.x << " " << temp_segment.b.y << endl;
+            // std::cout << "curr_segment.a " << curr_segment.a.x << " " << curr_segment.a.y << endl;
+            // std::cout << "curr_segment.b " << curr_segment.b.x << " " << curr_segment.b.y << endl;
+            // std::cout << "intersection_point " << intersection_point.x << " " << intersection_point.y << endl;
             if(obs == pt.obs) {
               if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
                 if(intersection_point.y > pt.y) {up = 1;}
@@ -360,10 +365,10 @@ namespace student {
       open_line_segments.push_back(temp_segment);
     }
 
-    // for debugging
+    // print out the open line segments
     // std::cout << "open line segments:" << std::endl;
     // for(int i = 0; i < open_line_segments.size(); i++){
-    //  std::cout << "seg #"<< i << "A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << std::endl; 
+    //  std::cout << "seg # "<< i << " A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << std::endl; 
     // }
 
     //Finding cells
@@ -378,19 +383,18 @@ namespace student {
     SEGMENT temp_segment;
     std::vector< std::vector<POINT> > cells;
     int break_now;
-    int done[3];
+    std::vector<int> done;
 
     for(int i = 0; i < open_line_segments.size(); i++) {
       curr_segment = open_line_segments[i];
       curr_vertex = sorted_vertices[i];
       break_now = 0;
-      done[0] = 0;
-      done[1] = 0;
-      done[2] = 1;
+      done = {0,0,1};
+
       // a is lower limit , b is upper limit
       // if lower limit is blocked -> don't look down
       if(curr_segment.a.x == -1) {done[0] = 1;}
-      // if upper lmit is blocked -> don't look up
+      // if upper lmit is blocked -> don't look up :)
       if(curr_segment.b.x == -1) {done[1] = 1;}
       // if upper and lower limits are blocked -> figure out something else
       if((curr_segment.a.x == -1) && (curr_segment.b.x == -1)) {done[2] = 0;}
@@ -731,13 +735,13 @@ namespace student {
         // print debug for lines_to_check
         // for(unsigned j=0; j<lines_to_check.size(); j++){
 
-          // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // auto color_rand = cv::Scalar(output4,output5,output6);
-          // cv::line(plot, cv::Point2f(lines_to_check[j].a.x*enlarge,lines_to_check[j].a.y*enlarge), cv::Point2f(lines_to_check[j].b.x*enlarge,lines_to_check[j].b.y*enlarge), color_rand, 1);           
-          // cv::imshow("Clipper", plot);
-          // cv::waitKey(0); 
+        //   int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        //   int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        //   int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        //   auto color_rand = cv::Scalar(output4,output5,output6);
+        //   cv::line(plot, cv::Point2f(lines_to_check[j].a.x*enlarge,lines_to_check[j].a.y*enlarge), cv::Point2f(lines_to_check[j].b.x*enlarge,lines_to_check[j].b.y*enlarge), color_rand, 1);           
+        //   cv::imshow("Clipper", plot);
+        //   cv::waitKey(0); 
         // } 
 
 
@@ -751,16 +755,12 @@ namespace student {
         // }
         // cv::imshow("Clipper", plot);
         // cv::waitKey(0);
-        // cv::Point2f point_center(0.427051*enlarge,0.876125*enlarge);
-        // cv::circle(plot, point_center, 10,cv::Scalar( 0, 10, 125 ),2);
-        // cv::imshow("Clipper", plot);
-        // cv::waitKey(0);  
 
         std::vector<int> temp_to_remove;
-        for(int line = 0; line < lines_to_check.size(); line++) { //for index5,q in enumerate(lines_to_check):  
+        for(int line = 0; line < lines_to_check.size(); line++) {  
           // for debugging
           // reset_obs_plot(plot,obstacles);
-          int no_intersection[3] = {1, 1, 1};                 //ok = [True, True, True];
+          int no_intersection[3] = {1, 1, 1};           
           for(int obs = 0; obs < obstacles.size(); obs++) {              //for index3,obs in enumerate(new_obstacles): //obs.append( obs[0] ); <-already done
             for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) { //for index4 in range(len(obs)-1):
               temp_segment.a = obstacles[obs][vertex];
@@ -1182,26 +1182,48 @@ namespace student {
 
     //Source
     int min_ind = -1; 
-    int min = 9999999;
-    int dist;
+    float min = 9999999;
+    float dist;
     int m;
 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
       temp_segment.a = start_point[0]; //TODO: change for more than one robot
       temp_segment.b = graph_vertices[vertex];
+
+      // int output10 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+      // int output11 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+      // int output12 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+      // auto color_rand = cv::Scalar(output10,output11,output12);
+      // cv::Point2f point_center22(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge);
+      // cv::circle(plot, point_center22, 2,color_rand,cv::FILLED,cv::LINE_8);
+      // cv::Point2f point_center222(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge);
+      // cv::circle(plot, point_center222, 2,color_rand,cv::FILLED,cv::LINE_8);
+      // cv::imshow("Clipper", plot);
+      // cv::waitKey(0);
+
+      // find the closest vertex in the graph to the start point
       if(check_obstruction(obstacles, temp_segment)) {
         dist = find_dist(graph_vertices[vertex], start_point[0]); //TODO: change for more than one robot
+        // std::cout << "current distance: " << dist << "minimum distance: " << min << std::endl;
         if(dist < min) {
           min = dist;
           min_ind = vertex;
+          // std::cout << "distance: " << dist << " closest vertex: " << vertex << std::endl;
         } 
       }
     }
-
+      cv::imshow("Clipper", plot);
+      cv::waitKey(0);
     graph_vertices.push_back(start_point[0]); //TODO: change for more than one robot
     m = graph_vertices.size()-1;
     temp_point.x = min_ind;
     temp_point.y = m;
+    std::cout << "the start point: (" << (temp_point.x*enlarge) << " , " << temp_point.y*enlarge << ")" << std::endl;
+    cv::Point2f point_center222(temp_point.x*enlarge,temp_point.y*enlarge);
+    cv::circle(plot, point_center222, 10,cv::Scalar( 40, 30, 125 ) ,cv::FILLED,cv::LINE_8);
+    cv::imshow("Clipper", plot);
+    cv::waitKey(0);
+
     graph_edges.push_back(temp_point);
 
     // destination
@@ -1332,16 +1354,16 @@ namespace student {
     cv::imshow("Clipper", plot);
     cv::waitKey(0);  
     //drawing the points
-    for (unsigned i=0; i<graph_vertices.size(); i++) {
-      int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      auto color_rand = cv::Scalar(output7,output8,output9);
-      cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
-      cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
-      std::string text = std::to_string(i);
-      putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
-    }
+    // for (unsigned i=0; i<graph_vertices.size(); i++) {
+    //   int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   auto color_rand = cv::Scalar(output7,output8,output9);
+    //   cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
+    //   cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+    //   std::string text = std::to_string(i);
+    //   putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
+    // }
 
     //draw start and end point
     cv::Point2f centerCircle11(start_point[0].x*enlarge,start_point[0].y*enlarge);

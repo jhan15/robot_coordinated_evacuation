@@ -13,16 +13,6 @@ using namespace std;
 POINT intersection(SEGMENT segment1, SEGMENT segment2) {   
     POINT intersection_point;
 
-    // if ((segment1.a.x == segment2.a.x && segment1.a.y == segment2.a.y) ||
-    // (segment1.b.x == segment2.b.x && segment1.b.y == segment2.b.y) ||
-    // (segment1.a.x == segment2.b.x && segment1.a.y == segment2.b.y) ||
-    // (segment1.b.x == segment2.a.x && segment1.b.y == segment2.a.y)){
-    //     std::cout << "hi" << std::endl;
-	// 	intersection_point.x = (-1);
-    // 	intersection_point.y = (-1);
-    //     return intersection_point;
-    // }
-
     float d = (segment1.a.x - segment1.b.x) * (segment2.a.y - segment2.b.y) - (segment1.a.y - segment1.b.y) * (segment2.a.x - segment2.b.x);
 
     if (d == 0) {
@@ -92,34 +82,38 @@ float polygon_area(std::vector<POINT> vertices, int vertices_num) {
 }
 
 float find_dist(POINT pt1, POINT pt2) {
-    return sqrt(pow((pt1.x - pt2.x),2) + pow(pt1.y-pt2.y,2)); 
+    return float (sqrt(pow((pt1.x - pt2.x),2) + pow(pt1.y-pt2.y,2))); 
 }
 
-int check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment) {
-    int res = 1;
-    int break_out = 0;
+bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment) {
+    int res = true;
+    int break_out = false;
     int n;
     SEGMENT obs_side;
 
-    for(int obs = 0; obs < obstacles.size(); obs++) {
-        n = obstacles[obs].size()-1;
+
+    for(std::vector<POINT> &obs : obstacles){
         // check that the obstacle starts and ends with the same point
-        if((obstacles[obs][n].x != obstacles[obs][0].x) || (obstacles[obs][n].y != obstacles[obs][0].y)) {
-            obstacles[obs].push_back(obstacles[obs][0]);
+        n = obs.size()-1;
+        if(obs[0].x != obs[n].x){
+            obs.push_back(obs[0]);
+            n+=1;
         }
-        for(int pt = 0; pt < (obstacles[obs].size()-1); pt++) {
-        	obs_side.a = obstacles[obs][pt];
-        	obs_side.b = obstacles[obs][pt+1];
-            if ((segment_intersection(segment, obs_side,false)).x != -1) {            	
-                res = 0;
-                break_out = 1;
+        for (int pt = 0; pt < n; pt++ ){
+            obs_side.a = obs[pt];
+            obs_side.b = obs[pt+1];
+            if(segment_intersection(segment,obs_side,false).x != -1){
+                res = false;
+                break_out = true;
                 break;
-            }  
+            }
         }
-        if(break_out) {
+        if (break_out){
             break;
         }
     }
+    std::cout << "intersection result: " << res << "\n -----" << std::endl;
+
     return res;
 }
 

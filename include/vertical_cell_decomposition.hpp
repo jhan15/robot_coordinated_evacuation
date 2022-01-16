@@ -32,7 +32,7 @@ POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print);
 POINT centroid(std::vector<POINT> vertices);
 float polygon_area(std::vector<POINT> vertices, int vertices_num);
 float find_dist(POINT pt1, POINT pt2);
-int check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment);
+bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment);
 std::vector<int> backtrace(std::vector<int> parent, int start, int end);
 std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int target);
 
