@@ -11,6 +11,7 @@ takes the obsticales in the arena and inflates them to account for the size of t
 outputs the inflated obsticales
 */
 std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, float inflate_value, cv::Mat plot){
+    std::vector<Polygon> new_obsticale_list = obstacle_list;
     std::vector<Polygon> inflated_obsticale_list;
     int px, py;
 
@@ -46,21 +47,38 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
             inflated_obsticale_list.emplace_back(inflated_poly);
         }
 
-        // draw solution
-        for (unsigned j=1; j<clib_obsticale.size(); j++) {
-            cv::line(plot, cv::Point2f(clib_obsticale.at(j-1).X,clib_obsticale.at(j-1).Y), cv::Point2f(clib_obsticale.at(j).X,clib_obsticale.at(j).Y), cv::Scalar(255,0,0), 1);
-        }
-        cv::line(plot, cv::Point2f(clib_obsticale.at(clib_obsticale.size()-1).X,clib_obsticale.at(clib_obsticale.size()-1).Y), cv::Point2f(clib_obsticale.at(0).X,clib_obsticale.at(0).Y), cv::Scalar(255,0,0), 1);
-
-        for (unsigned i=0; i<clib_merged_obs.size(); i++) {
-            ClipperLib::Path path = clib_merged_obs.at(i);
-            for (unsigned j=1; j<path.size(); j++) {
-                cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
+        for(int i=0; i<new_obsticale_list.size();i++){
+            if(new_obsticale_list[i][0].x != new_obsticale_list[i].back().x || new_obsticale_list[i][0].y != new_obsticale_list[i].back().y){
+                new_obsticale_list[i].push_back(new_obsticale_list[i][0]);
             }
-
-            cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
-
+            for(int j=1 ; j< new_obsticale_list[i].size();j++){
+                cv::line(plot, cv::Point2f(new_obsticale_list[i][j-1].x*enlarge,new_obsticale_list[i][j-1].y*enlarge), cv::Point2f(new_obsticale_list[i][j].x*enlarge,new_obsticale_list[i][j].y*enlarge), cv::Scalar(255,0,0), 1);
+            }
         }
+        for(int i=0; i<inflated_obsticale_list.size();i++){
+            if(inflated_obsticale_list[i][0].x != inflated_obsticale_list[i].back().x || inflated_obsticale_list[i][0].y != inflated_obsticale_list[i].back().y){
+                inflated_obsticale_list[i].push_back(inflated_obsticale_list[i][0]);
+            }
+            for(int j=1 ; j< inflated_obsticale_list[i].size();j++){
+                cv::line(plot, cv::Point2f(inflated_obsticale_list[i][j-1].x*enlarge,inflated_obsticale_list[i][j-1].y*enlarge), cv::Point2f(inflated_obsticale_list[i][j].x*enlarge,inflated_obsticale_list[i][j].y*enlarge), cv::Scalar(255,255,0), 1);
+            
+            }
+        }
+        // draw solution
+        // for (unsigned j=1; j<clib_obsticale.size(); j++) {
+        //     cv::line(plot, cv::Point2f(clib_obsticale.at(j-1).X,clib_obsticale.at(j-1).Y), cv::Point2f(clib_obsticale.at(j).X,clib_obsticale.at(j).Y), cv::Scalar(255,0,0), 1);
+        // }
+        // cv::line(plot, cv::Point2f(clib_obsticale.at(clib_obsticale.size()-1).X,clib_obsticale.at(clib_obsticale.size()-1).Y), cv::Point2f(clib_obsticale.at(0).X,clib_obsticale.at(0).Y), cv::Scalar(255,0,0), 1);
+
+        // for (unsigned i=0; i<clib_merged_obs.size(); i++) {
+        //     ClipperLib::Path path = clib_merged_obs.at(i);
+        //     for (unsigned j=1; j<path.size(); j++) {
+        //         cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
+        //     }
+
+        //     cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
+
+        // }
     }
 
     return inflated_obsticale_list;

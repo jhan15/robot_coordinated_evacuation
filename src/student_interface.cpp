@@ -110,12 +110,8 @@ namespace student {
     std::vector<POINT> start_point;
 
     for (int i = 0; i < x.size(); i++) {
-      temp_point.x = x[i];
-      temp_point.y = y[i];
-      temp_point.theta = theta[i];
-      start_point.push_back(temp_point);
+      start_point.push_back(POINT{x[i],y[i],theta[i]});
     }
-
     
     // std::cout<<"\n>>>> Starting points:"<<std::endl;
     // for(int i = 0; i < start_point.size(); i++){
@@ -129,9 +125,7 @@ namespace student {
     for (int i = 0; i < gate_list.size(); i++) {
       //cout << "\n>>>> Gate " << i << endl;
       for (const auto &position : gate_list[i]) {
-        temp_point.x = position.x;
-        temp_point.y = position.y;
-        gate.push_back(temp_point);
+        gate.push_back({position.x,position.y});
         //cout<< "x=" << temp_point.x << " y=" << temp_point.y << endl;
       }
       end_point.push_back(centroid(gate));
@@ -144,24 +138,19 @@ namespace student {
     //  cout<< "x=" << end_point[i].x << " y=" << end_point[i].y << endl;
     //}
     
-
     std::vector< std::vector<POINT> > obstacles;
     std::vector<POINT> obstacle;
     int vertices_num = 0;
 
     for (int i = 0; i < inflated_obstacle_list.size(); i++) { // change to inflated_obstacle_list later
       for (const auto &position : inflated_obstacle_list[i]) { // change to inflated_obstacle_list later
-        temp_point.x = position.x;
-        temp_point.y = position.y;
-        temp_point.obs = i;
-        obstacle.push_back(temp_point);
+        obstacle.push_back(POINT{position.x,position.y,-1,i});
         vertices_num += 1;
       }
       obstacles.push_back(obstacle);
       obstacle.clear();
     }
 
-    
     //std::cout<<"\n>>>> Obstacles:"<<std::endl;
     //for(int i = 0; i < obstacles.size(); i++){
     //  std::cout<<"\nObstacle "<< i << endl;
@@ -175,10 +164,7 @@ namespace student {
 
     //filling the vector with the required number of placeholder points 
     for(int curr_vertex = vertices_num - 1; curr_vertex >= 0; curr_vertex--) {
-      temp_point.x = -1;
-      temp_point.y = -1;
-      temp_point.obs = -1;
-      sorted_vertices.push_back(temp_point);
+      sorted_vertices.push_back(POINT{-1,-1,-1,-1});
     }
        
     int add_to_list;
@@ -425,15 +411,15 @@ namespace student {
           if(double_check) {
             // make a segment out of the lower limit of the current vertical line, 
             // and the current point of the obstacle
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(curr_vertex);
             //make a segment out of the lower limit of the next vertical lines,
             // and the next point of the next higher x value.
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);
             // find the center of both these segments          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
 
@@ -455,21 +441,21 @@ namespace student {
             
 
             //.a remains the same
-            temp_points2.clear();
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points2.clear();
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
             //trapezoids
-            temp_points1.clear();
+            // temp_points1.clear();
             // the lower point from the current vertical line, the lower point from the next vertical line
             // the next point on the obstacle, and the current point of the obsticale
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_vertex);
+            trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
 
             // print debug for temp points
             // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
@@ -483,257 +469,255 @@ namespace student {
             // cv::imshow("Clipper", plot);
             // cv::waitKey(0); 
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            temp_points1.push_back(curr_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.a.x != -1) {
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(curr_vertex);
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
             // trapezoids
             temp_points1.clear();
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_vertex);
+            trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.b.x != -1) {
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(curr_vertex);
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            temp_points1.push_back(curr_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else {
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(curr_vertex);
-            temp_segment.a = centroid(temp_points1); 
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(curr_vertex);
+            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
             temp_segment.b = next_vertex;
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_vertex);
+            trapezoids.push_back({curr_segment.a,next_vertex,curr_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
         }
-        temp_points1.clear();
-        temp_points2.clear();
+        // temp_points1.clear();
+        // temp_points2.clear();
         if(done[1] == 0) {
           if(double_check) {
-            temp_points1.push_back(curr_segment.b);
-            temp_points1.push_back(curr_vertex);
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points1.push_back(curr_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
 
             //.a remains the same
-            temp_points2.clear();
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points2.clear();
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
 
 
             // change from the repo trapezoids.append([ curr_vertex, next_segment[0], next_vertex , point(curr_segment[1].x, curr_segment[1].y,curr_segment[1].obstacle, 34)]);
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_segment.b);
+            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            temp_points1.push_back(curr_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            // temp_points1.push_back(curr_segment.b);
+            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.a.x != -1) {
-            temp_points1.push_back(curr_segment.b);
-            temp_points1.push_back(curr_vertex);
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points1.push_back(curr_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_segment.b);
+            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.b.x != -1) {
-            temp_points1.push_back(curr_segment.b);
-            temp_points1.push_back(curr_vertex);
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.a = centroid(temp_points1); 
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points1.push_back(curr_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            temp_points1.push_back(curr_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            // temp_points1.push_back(curr_segment.b);
+            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else {
-            temp_points1.push_back(curr_segment.b);
-            temp_points1.push_back(curr_vertex);
-            temp_segment.a = centroid(temp_points1); 
+            // temp_points1.push_back(curr_segment.b);
+            // temp_points1.push_back(curr_vertex);
+            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
             temp_segment.b = next_vertex;
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(curr_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(curr_segment.b);
+            trapezoids.push_back({curr_vertex,next_vertex,curr_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
         }
-        temp_points1.clear();
-        temp_points2.clear();
+        // temp_points1.clear();
+        // temp_points2.clear();
         if(done[2] == 0) {
           if(double_check) {
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);          
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);          
             temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid(temp_points2); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(2);
 
-            temp_points2.clear();
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
-            temp_segment.b = centroid(temp_points2); 
+            // temp_points2.clear();
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(2);
             // trapezoids
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex});
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.a.x != -1) {
-            temp_points2.push_back(next_segment.a);
-            temp_points2.push_back(next_vertex);          
+            // temp_points2.push_back(next_segment.a);
+            // temp_points2.push_back(next_vertex);          
             temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid(temp_points2); 
+            temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(2);
             // trapezoids
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_segment.a);
-            temp_points1.push_back(next_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_segment.a);
+            // temp_points1.push_back(next_vertex);
+            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else if(next_segment.b.x != -1) {
-            temp_points2.push_back(next_segment.b);
-            temp_points2.push_back(next_vertex);          
+            // temp_points2.push_back(next_segment.b);
+            // temp_points2.push_back(next_vertex);          
             temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid(temp_points2); 
+            temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(2);
 
             temp_points1.clear();
             // trapezoids
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            temp_points1.push_back(next_segment.b);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            // temp_points1.push_back(next_segment.b);
+            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
           else {
             temp_segment.a = curr_vertex; 
             temp_segment.b = next_vertex;
-            lines_to_check.push_back(temp_segment);
+            lines_to_check.push_back({temp_segment});
             group.push_back(2);
 
-            temp_points1.clear();
-            temp_points1.push_back(curr_vertex);
-            temp_points1.push_back(next_vertex);
-            trapezoids.push_back(temp_points1);
+            // temp_points1.clear();
+            // temp_points1.push_back(curr_vertex);
+            // temp_points1.push_back(next_vertex);
+            trapezoids.push_back({curr_vertex,next_vertex});
 
-            temp_points1.clear();
-            temp_points2.clear();
+            // temp_points1.clear();
+            // temp_points2.clear();
           }
         }
-
-
         // print debug for lines_to_check
         // for(unsigned j=0; j<lines_to_check.size(); j++){
 
@@ -1215,8 +1199,8 @@ namespace student {
         } 
       }
     }
-      cv::imshow("Clipper", plot);
-      cv::waitKey(0);
+      // cv::imshow("Clipper", plot);
+      // cv::waitKey(0);
     graph_vertices.push_back(start_point[0]); //TODO: change for more than one robot
     m = graph_vertices.size()-1;
     temp_point.x = min_ind;
