@@ -85,7 +85,8 @@ namespace student {
 
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
-    // inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
+    inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
+    inflated_obstacle_list =  merge_obstacles (inflated_obstacle_list, plot);
 
     // TO DO: implement a function to merge the obstacles that are over lapping
     // TO DO: delete all the vertcices outside of the borders
@@ -1168,7 +1169,7 @@ namespace student {
 
     //Source
     int min_ind = -1; 
-    float min = 9999999;
+    float min = INFINITY;
     float dist;
     int m;
 

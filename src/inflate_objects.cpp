@@ -115,10 +115,10 @@ Polygon inflate_borders(const Polygon &borders, float inflate_value, cv::Mat plo
         }
     }
 
-    float biggest_x = -1;
-    float biggest_y = -1;
-    float smallest_x = 9999999;
-    float smallest_y = 9999999;
+    float biggest_x = -INFINITY;
+    float biggest_y = -INFINITY;
+    float smallest_x = INFINITY;
+    float smallest_y = INFINITY;
     for (Point pt: inflated_borders){
         if (pt.y > biggest_y){biggest_y = pt.y;}
         if (pt.y < smallest_y){smallest_y = pt.y;}
@@ -296,4 +296,60 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
     // }
 
     return new_obstacles;
+}
+
+bool overlap_check(const Polygon &pol1, const Polygon &pol2){
+    Polygon obs1 = pol1;
+    Polygon obs2 = pol2;
+
+    // using separated axes theorem to check for overlaping
+    // check the projection of each edge of both obstacles
+    for (int obs_count = 0; obs_count < 2; obs_count++){
+        // switch the obstacles
+        if (obs_count == 1){
+            obs1 = pol2;
+            obs2 = pol1;
+        }
+        for (int pt = 0; pt < obs1.size(); pt++){
+            // to loop back to first point
+            int next_pt = (pt + 1) % obs1.size();
+            Point axis_proj = {-(obs1[next_pt].y - obs1[pt].y), obs1[next_pt].x - obs1[pt].x};
+            float distance = sqrtf(axis_proj.x * axis_proj.x + axis_proj.y * axis_proj.y);
+            axis_proj = {axis_proj.x / distance, axis_proj.y / distance};
+
+            float obs1_min = INFINITY;
+            float obs1_max = -INFINITY;
+            float obs2_min = INFINITY;
+            float obs2_max = -INFINITY;
+            // min and max points of obstacle 1 projection
+            for (int i = 0; i < obs1.size(); i++){
+                float j = (obs1[i].x * axis_proj.x + obs1[i].y * axis_proj.y);
+                obs1_min = min(obs1_min, j);
+                obs1_max = max(obs1_max, j);
+            }
+            // min and max points of obstacle 2 projection
+            for (int i = 0; i < obs2.size(); i++){
+                float j = (obs2[i].x * axis_proj.x + obs2[i].y * axis_proj.y);
+                obs2_min = min(obs2_min, j);
+                obs2_max = max(obs2_max, j);
+            }
+            // if one axis has no overlap -> obstacles are not overlaping
+            if (!(obs2_max >= obs1_min && obs1_max >= obs2_min)){
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,cv::Mat plot){
+    bool overlap_result = false;
+    for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
+        for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
+            overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
+            std::cout << " obstacle # " << curr_obs << " and obstacle # " << next_obs << " are: " << overlap_result << std::endl;
+            }					
+    }
+
+    return obstacle_list;
 }
