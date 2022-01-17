@@ -153,7 +153,7 @@ Polygon inflate_borders(const Polygon &borders, float inflate_value, cv::Mat plo
     return inflated_borders_sorted;
 }
 
-std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
+std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
     std::vector<Polygon> new_obstacles;
     Polygon new_borders = borders;
     Polygon new_obstacle;
@@ -163,7 +163,6 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
     POINT intersection_pt2;
     bool out_of_border = false;
     bool inter_check = false;
-    bool two_intersect = false;
     int tracker = 0;
     int compensator = 0;
     std::vector<int> to_delete;
@@ -182,11 +181,12 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
     int obs_counter = 0;
     // remove the parts of the obstacles that fall outside of the borders
     for(Polygon obstacle : obstacle_list){
+        new_obstacle.clear();
         if(obstacle[0].x != obstacle.back().x || obstacle[0].y != obstacle.back().y){
             obstacle.push_back(obstacle[0]);
         }
         obs_counter ++;
-        new_obstacle = obstacle;
+        // new_obstacle = obstacle;
         compensator = 0;  
         for(int obs_pt = 0 ; obs_pt < obstacle.size()-1;obs_pt++){
             std::cout << "-- obstacle #: "<< obs_counter << " point #: " << obs_pt << std::endl;
@@ -197,7 +197,6 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                 std::cout << "out of border" << std::endl;
                 obs_segment.a = {obstacle[obs_pt].x,obstacle[obs_pt].y};
                 for(int border_pt = 0 ; border_pt < new_borders.size()-1 ; border_pt++){
-                    two_intersect = false;
                     obs_segment.b = {obstacle[obs_pt+1].x,obstacle[obs_pt+1].y};
                     border_segment.a = {new_borders[border_pt].x,new_borders[border_pt].y};
                     border_segment.b = {new_borders[border_pt+1].x,new_borders[border_pt+1].y};
@@ -210,8 +209,8 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                     cv::circle(plot, centerCircle, 1,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
                     cv::line(plot, cv::Point2f(border_segment.a.x*enlarge,border_segment.a.y*enlarge), cv::Point2f(border_segment.b.x*enlarge,border_segment.b.y*enlarge), color_rand, 1);
                     cv::line(plot, cv::Point2f(obs_segment.a.x*enlarge,obs_segment.a.y*enlarge), cv::Point2f(obs_segment.b.x*enlarge,obs_segment.b.y*enlarge), color_rand, 1);
-                    cv::imshow("Clipper", plot);
-                    cv::waitKey(0);                    
+                    // cv::imshow("Clipper", plot);
+                    // cv::waitKey(0);                    
                     if(intersection_pt.x == -1){
                         tracker = obs_pt;
                         if(tracker == 0){
@@ -228,7 +227,9 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                         else{
                             std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
                             obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
-                            new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
+                            new_obstacle.push_back(obstacle[obs_pt]);
+                            break;
+                            // new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
                             inter_check = true;
                         }
                     }
@@ -244,43 +245,55 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                         if(intersection_pt2.x == -1){
                             std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
                             obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
-                            new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
+                            new_obstacle.push_back(obstacle[obs_pt]);
+                            break;
+                            // new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
                             inter_check = true;
                         }
                         else{
                             std::cout << "the point has two intersections" << std::endl;
-                            
+                            new_obstacle.push_back({intersection_pt.x,intersection_pt.y});
+                            new_obstacle.push_back({intersection_pt2.x,intersection_pt2.y});
+                            break;
+
                         }
                     }
 
                 }
             }
-            if (out_of_border && !inter_check){
-
-                std::cout << "erasing pt: (" << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y*enlarge << " ) and compensator is: " << compensator << std::endl;
-                cv::Point2f centerCircle(obstacle[obs_pt].x*enlarge,obstacle[obs_pt].y*enlarge);
-                cv::circle(plot, centerCircle, 1,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
-                new_obstacle.erase(new_obstacle.begin()+obs_pt-compensator);
-                compensator++;                
-            }
             else{
                 new_obstacle.push_back(obstacle[obs_pt]);
+                
                 std::cout << " --------next obstacle point --------- " << std::endl;
             }
+            // if (out_of_border && !inter_check){
+
+            //     std::cout << "erasing pt: (" << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y*enlarge << " ) and compensator is: " << compensator << std::endl;
+            //     cv::Point2f centerCircle(obstacle[obs_pt].x*enlarge,obstacle[obs_pt].y*enlarge);
+            //     cv::circle(plot, centerCircle, 1,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+            //     new_obstacle.erase(new_obstacle.begin()+obs_pt-compensator);
+            //     compensator++;                
+            // }
+
         }
         new_obstacles.push_back(new_obstacle);
     }
+    //     std::cout << "old obstacle size: " << obstacle_list.size() << " new obstacle size: " << new_obstacles.size() << std::endl;
+    //     for(int i=0; i<new_obstacles.size();i++){
+    //         std::cout << "old size of obstacle # " << i << " is: " << obstacle_list[i].size() << " new size: " << new_obstacles[i].size() << std::endl;
+    //         if(new_obstacles[i][0].x != new_obstacles[i].back().x || new_obstacles[i][0].y != new_obstacles[i].back().y){
+
+    //             new_obstacles[i].push_back(new_obstacles[i][0]);
+    //             std::cout << "getting triggered" << std::endl;
+    //         }
+    //         for(int j=1 ; j< new_obstacles[i].size();j++){
+    //             std::cout << "-- obstacle #: "<< i << " section #: " << j  << " ( " << (new_obstacles[i][j-1].x*enlarge) << " , " << (new_obstacles[i][j-1].y*enlarge)  << " ) , ( " << (new_obstacles[i][j].x*enlarge) << " , " << (new_obstacles[i][j].y*enlarge) << " )" << std::endl;
+    //             std::cout << "-- old obstacle #: "<< i << " section #: " << j  << " ( " << (obstacle_list[i][j-1].x*enlarge) << " , " << (obstacle_list[i][j-1].y*enlarge)  << " ) , ( " << (obstacle_list[i][j].x*enlarge) << " , " << (obstacle_list[i][j].y*enlarge) << " )" << std::endl;
+    //             cv::line(plot, cv::Point2f(new_obstacles[i][j-1].x*enlarge,new_obstacles[i][j-1].y*enlarge), cv::Point2f(new_obstacles[i][j].x*enlarge,new_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
+    //             cv::imshow("Clipper", plot);
+    //             cv::waitKey(0); 
+    //         }
+    // }
+
     return new_obstacles;
 }
-
-
-
-    // for (unsigned i = 0; i< obstacle_list.size(); i++) {
-    //   std::cout << "Obsticale #" << i << std::endl;
-    //   Polygon obstacle = obstacle_list[i];
-    //   Polygon obstacle_after = inflated_obstacle_list[i];
-    //   for (unsigned j = 0; j< obstacle.size(); j++) {
-    //       std::cout << "Obsticale points x: " << obstacle[j].x << ", y: " << obstacle[j].y << std::endl;
-    //       std::cout << "Obsticale points_after x: " << obstacle_after[j].x << ", y: " << obstacle_after[j].y << std::endl;
-    //   }
-    // }
