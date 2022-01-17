@@ -1,5 +1,6 @@
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
+#include "boost/geometry/geometry.hpp"
 
 const double enlarge = 600.;
 // for ploting the solution
