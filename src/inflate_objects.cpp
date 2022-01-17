@@ -160,8 +160,10 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
     SEGMENT obs_segment;
     SEGMENT border_segment;
     POINT intersection_pt;
+    POINT intersection_pt2;
     bool out_of_border = false;
     bool inter_check = false;
+    bool two_intersect = false;
     int tracker = 0;
     int compensator = 0;
     std::vector<int> to_delete;
@@ -177,22 +179,26 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
     for (int i = 0 ; i < new_borders.size(); i ++){
         std::cout << "border # " << i << " ( " << new_borders[i].x*enlarge << " , " << new_borders[i].y*enlarge << " ) " << std::endl;
     }
+    int obs_counter = 0;
     // remove the parts of the obstacles that fall outside of the borders
     for(Polygon obstacle : obstacle_list){
         if(obstacle[0].x != obstacle.back().x || obstacle[0].y != obstacle.back().y){
             obstacle.push_back(obstacle[0]);
         }
+        obs_counter ++;
         new_obstacle = obstacle;
-        compensator = 0;
-        
+        compensator = 0;  
         for(int obs_pt = 0 ; obs_pt < obstacle.size()-1;obs_pt++){
+            std::cout << "-- obstacle #: "<< obs_counter << " point #: " << obs_pt << std::endl;
             inter_check = false;
             out_of_border = obstacle[obs_pt].x > x_limit_upper || obstacle[obs_pt].x < x_limit_lower
             || obstacle[obs_pt].y > y_limit_upper || obstacle[obs_pt].y < y_limit_lower;
             if(out_of_border){
+                std::cout << "out of border" << std::endl;
                 obs_segment.a = {obstacle[obs_pt].x,obstacle[obs_pt].y};
-                obs_segment.b = {obstacle[obs_pt+1].x,obstacle[obs_pt+1].y};
                 for(int border_pt = 0 ; border_pt < new_borders.size()-1 ; border_pt++){
+                    two_intersect = false;
+                    obs_segment.b = {obstacle[obs_pt+1].x,obstacle[obs_pt+1].y};
                     border_segment.a = {new_borders[border_pt].x,new_borders[border_pt].y};
                     border_segment.b = {new_borders[border_pt+1].x,new_borders[border_pt+1].y};
                     intersection_pt = segment_intersection(obs_segment,border_segment,true);
@@ -201,9 +207,9 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                     int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
                     auto color_rand = cv::Scalar(output7,output8,output9);
                     cv::Point2f centerCircle(obstacle[obs_pt].x*enlarge,obstacle[obs_pt].y*enlarge);
-                    cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
-                    cv::line(plot, cv::Point2f(border_segment.a.x*enlarge,border_segment.a.y*enlarge), cv::Point2f(border_segment.b.x*enlarge,border_segment.b.y*enlarge), color_rand, 2);
-                    cv::line(plot, cv::Point2f(obs_segment.a.x*enlarge,obs_segment.a.y*enlarge), cv::Point2f(obs_segment.b.x*enlarge,obs_segment.b.y*enlarge), color_rand, 2);
+                    cv::circle(plot, centerCircle, 1,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
+                    cv::line(plot, cv::Point2f(border_segment.a.x*enlarge,border_segment.a.y*enlarge), cv::Point2f(border_segment.b.x*enlarge,border_segment.b.y*enlarge), color_rand, 1);
+                    cv::line(plot, cv::Point2f(obs_segment.a.x*enlarge,obs_segment.a.y*enlarge), cv::Point2f(obs_segment.b.x*enlarge,obs_segment.b.y*enlarge), color_rand, 1);
                     cv::imshow("Clipper", plot);
                     cv::waitKey(0);                    
                     if(intersection_pt.x == -1){
@@ -211,20 +217,40 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
                         if(tracker == 0){
                             tracker = obstacle.size()-1;
                         }
+                        std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
                         std::cout << "-- no intersection -- trying the other way" << std::endl;
                         obs_segment.b = {obstacle[tracker-1].x,obstacle[tracker-1].y};
                         intersection_pt = segment_intersection(obs_segment,border_segment,true);
                         if(intersection_pt.x == -1){
                             std::cout << "-- still no intersection -- moving on to next border" << std::endl;
-                            // continue;
+                            continue;
+                        }
+                        else{
+                            std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
+                            obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
+                            new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
+                            inter_check = true;
                         }
                     }
-                    if(intersection_pt.x != -1){
-                        std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
-                        obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
-                        new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
-                        inter_check = true;
-                        // new_obstacle.push_back(obstacle[obs_pt]);
+                    else if(intersection_pt.x != -1){
+                        tracker = obs_pt;
+                        if(tracker == 0){
+                            tracker = obstacle.size()-1;
+                        }
+                        std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
+                        std::cout << "-- found intersection -- trying the other way" << std::endl;
+                        obs_segment.b = {obstacle[tracker-1].x,obstacle[tracker-1].y};
+                        intersection_pt2 = segment_intersection(obs_segment,border_segment,true);
+                        if(intersection_pt2.x == -1){
+                            std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
+                            obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
+                            new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
+                            inter_check = true;
+                        }
+                        else{
+                            std::cout << "the point has two intersections" << std::endl;
+                            
+                        }
                     }
 
                 }
@@ -233,13 +259,13 @@ std::vector<Polygon> merge_obstacles(const std::vector<Polygon>& obstacle_list,c
 
                 std::cout << "erasing pt: (" << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y*enlarge << " ) and compensator is: " << compensator << std::endl;
                 cv::Point2f centerCircle(obstacle[obs_pt].x*enlarge,obstacle[obs_pt].y*enlarge);
-                cv::circle(plot, centerCircle, 3,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+                cv::circle(plot, centerCircle, 1,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
                 new_obstacle.erase(new_obstacle.begin()+obs_pt-compensator);
                 compensator++;                
             }
             else{
                 new_obstacle.push_back(obstacle[obs_pt]);
-                std::cout << " --------next obstacle --------- " << std::endl;
+                std::cout << " --------next obstacle point --------- " << std::endl;
             }
         }
         new_obstacles.push_back(new_obstacle);
