@@ -346,52 +346,36 @@ void Print_Vector(vector<int> Vec)
     cout << "}" << endl;
     return;
 }
+void writeSvg(std::vector<polygon> const& g, std::string fname) {
+    std::ofstream svg(fname);
+    boost::geometry::svg_mapper<point_xy> mapper(svg, 400, 400);
+    for (auto& p: g) {
+        mapper.add(p);
+        mapper.map(p, "fill-opacity:0.5;fill:rgb(153,0,0);stroke:rgb(200,0,0);stroke-width:2");
+    }
+}
+
+void writeSvg_single(polygon const& g, std::string fname) {
+    std::ofstream svg(fname);
+    boost::geometry::svg_mapper<point_xy> mapper(svg, 400, 400);
+    mapper.add(g);
+    mapper.map(g, "fill-opacity:0.5;fill:rgb(153,0,0);stroke:rgb(200,0,0);stroke-width:2");
+}
+
 
 std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,cv::Mat plot){
     std::vector<Polygon> merged_obstacles;
     std::vector<std::vector<int> > obstacle_overlap_tab(obstacle_list.size());
-    // std::vector<std::vector<int> > obstacle_overlap_tab;
-    std::vector<bool> already_merged(obstacle_list.size(), false);
     std::vector<point_xy> temp_points;
+    Polygon temp_obj;
     polygon obs1;
     polygon obs2;
-    
     bool overlap_result = false;
 
-    // for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
-    //     for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
-    //         overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
-    //         std::cout << " obstacle # " << curr_obs << " and obstacle # " << next_obs << " are: " << overlap_result << std::endl;
-    //         if(overlap_result){
-    //             if(obstacle_overlap_tab.size()==0){
-    //                 obstacle_overlap_tab.push_back({curr_obs,next_obs});
-    //             }
-    //             else{
-    //                 for(int i=0; i< obstacle_overlap_tab.size();i++){
-    //                     std::cout << "i :"<< i << endl;
-    //                     for(int j=0; j<obstacle_overlap_tab[i].size();j++){
-    //                         std::cout << "j :" << j<< endl;
-    //                         if(curr_obs == obstacle_overlap_tab[i][j]){
-    //                             obstacle_overlap_tab[i].push_back(next_obs);
-    //                             break;
-    //                         }
-    //                         else if(next_obs == obstacle_overlap_tab[i][j]){
-    //                             obstacle_overlap_tab[i].push_back(curr_obs);
-    //                             break;
-    //                         }
-    //                         else if (j == obstacle_overlap_tab[i].size()-1){
-    //                             obstacle_overlap_tab.push_back({curr_obs,next_obs});
-    //                             break;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }				
-    // }
-
-
     for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
+        cv::Point2f centerCircle(obstacle_list[curr_obs][0].x*enlarge,obstacle_list[curr_obs][0].y*enlarge);
+        std::string text = std::to_string(curr_obs);
+        putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  cv::Scalar(24,30,100), 2);        
         obstacle_overlap_tab[curr_obs].push_back(curr_obs);
         for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
             overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
@@ -411,7 +395,7 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
         std::cout << " }" << std::endl;
     }
     int lf;
-    std::vector<std::vector< int> >  out;
+    std::vector<std::vector< int> >  merge_list;
 
     while (int(temp_l.size()) > 0){
         std::vector<int> first = temp_l[0];
@@ -436,8 +420,6 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
                 // cout << "}" << std::endl;
 
                 std::sort(r.begin(), r.end());
-                // set<std::vector< int> > r_s;
-                // r_s.insert(r);
                 std::vector<int> common_data;
                 set_intersection(first.begin(),first.end(),r.begin(),r.end(), std::back_inserter(common_data));
                 // std::cout << "common data: {";
@@ -449,7 +431,6 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
                     first.insert(first.end(),r.begin(),r.end());
                     sort(first.begin(), first.end());
                     first.erase(unique(first.begin(), first.end()), first.end());
-                    // first_s.insert(r.begin(),r.end());
                     // set<std::vector< int> >::iterator it = first_s.begin();
                     // std::cout << "first vector: ";
                     // for(int i = 0 ; i< first.size();i++){
@@ -466,97 +447,109 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
             }
             rest = rest2;
         }
-        out.push_back(first);
+        merge_list.push_back(first);
         temp_l = rest;
     }
 
     std::cout << "final data: {";
-    for(int i = 0 ; i< out.size();i++){
-        Print_Vector(out[i]);
+    for(int i = 0 ; i< merge_list.size();i++){
+
+        Print_Vector(merge_list[i]);
     }
-    // set<set<std::vector< int> > >::iterator it = out.begin();
 
-    // for (it = out.begin(); it != out.end(); ++it)
-    // {
-    //     set<std::vector< int> >::iterator s;
-    //     for (s = it->begin(); s != it->end(); s++) {  
-
-    //         Print_Vector(*s);                    
-    //     }
-    //     std::cout << endl;
-    // }
-//             if len(first.intersection(set(r)))>0:
-//                 first |= set(r)
-//             else:
-//                 rest2.append(r)     
-//         rest = rest2
-
-//     out.append(first)
-//     l = rest
-
-// print(out)
-
-
-    // for (int i =0 ; i<obstacle_overlap_tab.size();i++){
-    //     if(true){
-    //         temp_points.clear();
-    //         for(Point curr_point : obstacle_list[i]){
-    //             temp_points+= point_xy(curr_point.x,curr_point.y);
+    // int nxt_frm_bk = 0;
+    // for(int i = 0; i< merge_list.size();i++){
+    //     std::cout << "i: "<< i << endl;
+    //     auto ind = merge_list[i].begin();
+    //     while (ind != merge_list[i].end()){
+    //         auto nxt_ind = std::next(ind, 1);
+    //         std::cout << "ind: " << *ind << " nxt_ind: " << *nxt_ind << endl;
+    //         std::cout << "nxt_frm_bk: " << nxt_frm_bk << endl;
+    //         if (overlap_check(obstacle_list[*ind], obstacle_list[*nxt_ind])){
+    //             nxt_frm_bk = 0;
+    //             ++ind;
     //         }
-    //         boost::geometry::assign_points(obs1, temp_points);
-    //         std::cout << "obstacle #" << i << " overlaps with the following obs {";
-
-    //         for(int j=0;j<obstacle_overlap_tab[i].size();j++){    
-    //             temp_points.clear();
-    //             for(Point curr_point : obstacle_list[j]){
-    //                 temp_points+= point_xy(curr_point.x,curr_point.y);
-    //             }
-    //             boost::geometry::assign_points(obs2, temp_points);
-    //             correct(obs1);
-    //             correct(obs2);
-    //             std::vector<polygon> output;
-    //             boost::geometry::union_(obs1, obs2, output);
-    //             obs1 = output[0];
-    //             std::cout << obstacle_overlap_tab[i][j] << " , ";
-    //         }
-    //     }
-    //     else{
-    //         merged_obstacles.push_back(obstacle_list[i]);
-    //     }
-    //     std::cout << " }" << std::endl;
-    // }
-
-    // for(int i=0; i<merged_obstacles.size();i++){
-    //     if(merged_obstacles[i][0].x != merged_obstacles[i].back().x || merged_obstacles[i][0].y != merged_obstacles[i].back().y){
-    //         merged_obstacles[i].push_back(merged_obstacles[i][0]);
-    //     }
-    //     for(int j=1 ; j< merged_obstacles[i].size();j++){
-    //         cv::line(plot, cv::Point2f(merged_obstacles[i][j-1].x*enlarge,merged_obstacles[i][j-1].y*enlarge), cv::Point2f(merged_obstacles[i][j].x*enlarge,merged_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
-    //         cv::imshow("Clipper", plot);
-    //         cv::waitKey(0); 
+    //         else{
+    //             std::cout << "no over lap" << std::endl;
+    //             std::cout << "before rotate" << std::endl;
+    //             Print_Vector(merge_list[i]);
+    //             std::rotate(nxt_ind,nxt_ind +1,merge_list[i].end()-nxt_frm_bk);
+    //             nxt_frm_bk ++;
+    //             std::cout << "after rotate" << std::endl;
+    //             Print_Vector(merge_list[i]);
+                
+    //             // merge_list[i].erase(nxt_ind);  
+    //         }           
     //     }
     // }
-//     std::cout << "Obstacle 1" << boost::geometry::dsv(obs1) << " has an area of " << boost::geometry::area(obs1) << std::endl;
-//     std::cout << "Obstacle 2" << boost::geometry::dsv(obs2) << " has an area of " << boost::geometry::area(obs2) << std::endl;
-//     
 
-//     
-//     // std::cout << "Obstacle union " << boost::geometry::dsv(output[0]) << " has an area of " << boost::geometry::area(output[0]) << std::endl;
-//     // int i = 0;
-//     // std::cout << "green || blue:" << std::endl;
-//     // BOOST_FOREACH(polygon const& p, output){
-//     //     std::cout << i++ << ": " << boost::geometry::area(p) << std::endl;
-//     // }
-// }   
+    //merging the obstacles
+    for (int obs_indices=0; obs_indices < merge_list.size();obs_indices++){
+        std::cout << "merged obstacle # " << obs_indices << std::endl;
+        temp_points.clear();
+        //convert obs1 to a boost polygon object
+        for(Point curr_point : obstacle_list[merge_list[obs_indices][0]]){
+            temp_points+= point_xy(curr_point.x,curr_point.y);
+        }
+        boost::geometry::assign_points(obs1, temp_points);
+        correct(obs1);
+        for(int i=0;i<merge_list[obs_indices].size()-1;i++){
+            int curr_ind = merge_list[obs_indices][i+1];
+            std::cout << "the big merged obstacle # " << obs_indices << " and sub obstacle #:" << curr_ind << endl;
+
+            // convert obs2 to a boost polygon object
+            temp_points.clear();
+            for(Point curr_point : obstacle_list[curr_ind]){
+                temp_points+= point_xy(curr_point.x,curr_point.y);
+            }
+            boost::geometry::assign_points(obs2, temp_points);
+            std::string name1 = "/home/basemprince/workspace/project/output/obs1_" + std::to_string(obs_indices) + std::to_string(curr_ind) + ".svg";
+            std::string name2 = "/home/basemprince/workspace/project/output/obs2_" + std::to_string(obs_indices) + std::to_string(curr_ind) + ".svg";
+            correct(obs2);
+            writeSvg_single(obs1,name1);
+            writeSvg_single(obs2,name2);
+            std::cout << "Obstacle 1" << boost::geometry::dsv(obs1) << " has an area of " << boost::geometry::area(obs1) << std::endl;
+            std::cout << "Obstacle 2" << boost::geometry::dsv(obs2) << " has an area of " << boost::geometry::area(obs2) << std::endl;
+            std::vector<polygon> output;
+            boost::geometry::union_(obs1, obs2, output);
+            obs1 = output[0];
+            std::string name="/home/basemprince/workspace/project/output/file_" + std::to_string(obs_indices) + std::to_string(curr_ind) + ".svg";
+            std::cout << name << endl;
+            writeSvg(output, name);
+            std::cout << "Obstacle union " << boost::geometry::dsv(output[0]) << " has an area of " << boost::geometry::area(output[0]) << std::endl;
+            int j = 0;
+            std::cout << "green || blue:" << std::endl;
+            if(output.size()>1){
+                merge_list[obs_indices].push_back(curr_ind);
+            }
+            BOOST_FOREACH(polygon const& p, output){
+                std::cout << j++ << ": " << boost::geometry::area(p) << std::endl;
+            }
+            std::cout << "-------------------" << endl;
+        }
+        //change boost object to a vector of points
+        temp_obj.clear();
+        for(auto it = boost::begin(boost::geometry::exterior_ring(obs1)); it != boost::end(boost::geometry::exterior_ring(obs1)); ++it){
+            float x = boost::geometry::get<0>(*it);
+            float y = boost::geometry::get<1>(*it);
+            temp_obj.push_back({x,y});
+        }
+        merged_obstacles.push_back(temp_obj);
+    }
+    
+    for(int i=0; i<merged_obstacles.size();i++){
+        if(merged_obstacles[i][0].x != merged_obstacles[i].back().x || merged_obstacles[i][0].y != merged_obstacles[i].back().y){
+            merged_obstacles[i].push_back(merged_obstacles[i][0]);
+        }
+        for(int j=1 ; j< merged_obstacles[i].size();j++){
+            cv::line(plot, cv::Point2f(merged_obstacles[i][j-1].x*enlarge,merged_obstacles[i][j-1].y*enlarge), cv::Point2f(merged_obstacles[i][j].x*enlarge,merged_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
+            cv::imshow("Clipper", plot);
+            cv::waitKey(0); 
+        }
+    }
 
 
 
-
-
-
-
-
-
-
-    return obstacle_list;
+    return merged_obstacles;
+;
 }
