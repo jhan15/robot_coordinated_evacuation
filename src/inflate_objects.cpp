@@ -1,6 +1,7 @@
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
-#include "boost/geometry/geometry.hpp"
+#include <set>
+
 
 const double enlarge = 600.;
 // for ploting the solution
@@ -163,10 +164,7 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
     POINT intersection_pt;
     POINT intersection_pt2;
     bool out_of_border = false;
-    bool inter_check = false;
     int tracker = 0;
-    int compensator = 0;
-    std::vector<int> to_delete;
 
     float y_limit_lower = min(min(borders[0].y, borders[1].y), min(borders[2].y, borders[3].y));
     float y_limit_upper = max(max(borders[0].y, borders[1].y), max(borders[2].y, borders[3].y));
@@ -179,29 +177,27 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
     for (int i = 0 ; i < new_borders.size(); i ++){
         std::cout << "border # " << i << " ( " << new_borders[i].x*enlarge << " , " << new_borders[i].y*enlarge << " ) " << std::endl;
     }
-    int obs_counter = 0;
+    // int obs_counter = 0;
     // remove the parts of the obstacles that fall outside of the borders
     for(Polygon obstacle : obstacle_list){
         new_obstacle.clear();
         if(obstacle[0].x != obstacle.back().x || obstacle[0].y != obstacle.back().y){
             obstacle.push_back(obstacle[0]);
         }
-        obs_counter ++;
+        // obs_counter ++;
         // new_obstacle = obstacle;
-        compensator = 0;  
         for(int obs_pt = 0 ; obs_pt < obstacle.size()-1;obs_pt++){
-            std::cout << "-- obstacle #: "<< obs_counter << " point #: " << obs_pt << std::endl;
-            inter_check = false;
+            // std::cout << "-- obstacle #: "<< obs_counter << " point #: " << obs_pt << std::endl;
             out_of_border = obstacle[obs_pt].x > x_limit_upper || obstacle[obs_pt].x < x_limit_lower
             || obstacle[obs_pt].y > y_limit_upper || obstacle[obs_pt].y < y_limit_lower;
             if(out_of_border){
-                std::cout << "out of border" << std::endl;
+                // std::cout << "out of border" << std::endl;
                 obs_segment.a = {obstacle[obs_pt].x,obstacle[obs_pt].y};
                 for(int border_pt = 0 ; border_pt < new_borders.size()-1 ; border_pt++){
                     obs_segment.b = {obstacle[obs_pt+1].x,obstacle[obs_pt+1].y};
                     border_segment.a = {new_borders[border_pt].x,new_borders[border_pt].y};
                     border_segment.b = {new_borders[border_pt+1].x,new_borders[border_pt+1].y};
-                    intersection_pt = segment_intersection(obs_segment,border_segment,true);
+                    intersection_pt = segment_intersection(obs_segment,border_segment,false);
                     int output7 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
                     int output8 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
                     int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
@@ -217,21 +213,20 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
                         if(tracker == 0){
                             tracker = obstacle.size()-1;
                         }
-                        std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
-                        std::cout << "-- no intersection -- trying the other way" << std::endl;
+                        // std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
+                        // std::cout << "-- no intersection -- trying the other way" << std::endl;
                         obs_segment.b = {obstacle[tracker-1].x,obstacle[tracker-1].y};
-                        intersection_pt = segment_intersection(obs_segment,border_segment,true);
+                        intersection_pt = segment_intersection(obs_segment,border_segment,false);
                         if(intersection_pt.x == -1){
-                            std::cout << "-- still no intersection -- moving on to next border" << std::endl;
+                            // std::cout << "-- still no intersection -- moving on to next border" << std::endl;
                             continue;
                         }
                         else{
-                            std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
+                            // std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
                             obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
                             new_obstacle.push_back(obstacle[obs_pt]);
                             break;
                             // new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
-                            inter_check = true;
                         }
                     }
                     else if(intersection_pt.x != -1){
@@ -239,20 +234,19 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
                         if(tracker == 0){
                             tracker = obstacle.size()-1;
                         }
-                        std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
-                        std::cout << "-- found intersection -- trying the other way" << std::endl;
+                        // std::cout << "obs_pt value: " << obs_pt << " tracker value : " << tracker << std::endl;
+                        // std::cout << "-- found intersection -- trying the other way" << std::endl;
                         obs_segment.b = {obstacle[tracker-1].x,obstacle[tracker-1].y};
                         intersection_pt2 = segment_intersection(obs_segment,border_segment,true);
                         if(intersection_pt2.x == -1){
-                            std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
+                            // std::cout << "moving point : " << obstacle[obs_pt].x*enlarge << " , " << obstacle[obs_pt].y * enlarge<< " ) to ( " << intersection_pt.x * enlarge<< " , " << intersection_pt.y * enlarge << " )" << std::endl;
                             obstacle[obs_pt] = {intersection_pt.x,intersection_pt.y};
                             new_obstacle.push_back(obstacle[obs_pt]);
                             break;
                             // new_obstacle[obs_pt-compensator] = obstacle[obs_pt];
-                            inter_check = true;
                         }
                         else{
-                            std::cout << "the point has two intersections" << std::endl;
+                            // std::cout << "the point has two intersections" << std::endl;
                             new_obstacle.push_back({intersection_pt.x,intersection_pt.y});
                             new_obstacle.push_back({intersection_pt2.x,intersection_pt2.y});
                             break;
@@ -265,7 +259,7 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
             else{
                 new_obstacle.push_back(obstacle[obs_pt]);
                 
-                std::cout << " --------next obstacle point --------- " << std::endl;
+                // std::cout << " --------next obstacle point --------- " << std::endl;
             }
             // if (out_of_border && !inter_check){
 
@@ -343,14 +337,226 @@ bool overlap_check(const Polygon &pol1, const Polygon &pol2){
     return true;
 }
 
+void Print_Vector(vector<int> Vec)
+{
+    cout << "{ ";
+    for (int i = 0; i < Vec.size(); i++) {
+        cout << Vec[i] << " , ";
+    }
+    cout << "}" << endl;
+    return;
+}
+
 std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,cv::Mat plot){
+    std::vector<Polygon> merged_obstacles;
+    std::vector<std::vector<int> > obstacle_overlap_tab(obstacle_list.size());
+    // std::vector<std::vector<int> > obstacle_overlap_tab;
+    std::vector<bool> already_merged(obstacle_list.size(), false);
+    std::vector<point_xy> temp_points;
+    polygon obs1;
+    polygon obs2;
+    
     bool overlap_result = false;
+
+    // for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
+    //     for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
+    //         overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
+    //         std::cout << " obstacle # " << curr_obs << " and obstacle # " << next_obs << " are: " << overlap_result << std::endl;
+    //         if(overlap_result){
+    //             if(obstacle_overlap_tab.size()==0){
+    //                 obstacle_overlap_tab.push_back({curr_obs,next_obs});
+    //             }
+    //             else{
+    //                 for(int i=0; i< obstacle_overlap_tab.size();i++){
+    //                     std::cout << "i :"<< i << endl;
+    //                     for(int j=0; j<obstacle_overlap_tab[i].size();j++){
+    //                         std::cout << "j :" << j<< endl;
+    //                         if(curr_obs == obstacle_overlap_tab[i][j]){
+    //                             obstacle_overlap_tab[i].push_back(next_obs);
+    //                             break;
+    //                         }
+    //                         else if(next_obs == obstacle_overlap_tab[i][j]){
+    //                             obstacle_overlap_tab[i].push_back(curr_obs);
+    //                             break;
+    //                         }
+    //                         else if (j == obstacle_overlap_tab[i].size()-1){
+    //                             obstacle_overlap_tab.push_back({curr_obs,next_obs});
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }				
+    // }
+
+
     for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
+        obstacle_overlap_tab[curr_obs].push_back(curr_obs);
         for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
             overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
             std::cout << " obstacle # " << curr_obs << " and obstacle # " << next_obs << " are: " << overlap_result << std::endl;
-            }					
+            if(overlap_result){
+                obstacle_overlap_tab[curr_obs].push_back(next_obs);
+            }
+        }				
     }
+    std::vector<std::vector <int> > temp_l = obstacle_overlap_tab;
+
+    for (int i =0 ; i<obstacle_overlap_tab.size();i++){
+        std::cout << "obstacle #" << i << " overlaps with the following obs {";
+        for(int j=0;j<obstacle_overlap_tab[i].size();j++){    
+            std::cout << obstacle_overlap_tab[i][j] << " , ";
+        }    
+        std::cout << " }" << std::endl;
+    }
+    int lf;
+    std::vector<std::vector< int> >  out;
+
+    while (int(temp_l.size()) > 0){
+        std::vector<int> first = temp_l[0];
+        std::sort(first.begin(), first.end());
+        std::vector<vector<int> > rest(temp_l.begin() + 1, temp_l.end());
+        // set<std::vector< int> > first_s;
+        // first_s.insert(first);
+        lf = -1;
+        while (int(first.size()) > lf){
+            lf = first.size();
+            std::vector<vector<int> > rest2;
+            for (vector<int> r : rest){
+                // std::cout << "first_data: {";
+                // for(int i = 0 ; i< first.size();i++){
+                //     std::cout  << first[i] << " , ";
+                // }
+                // cout << "}" << std::endl;
+                // std::cout << "rest_data: {";
+                // for(int i = 0 ; i< r.size();i++){
+                //     std::cout  << r[i] << " , ";
+                // }
+                // cout << "}" << std::endl;
+
+                std::sort(r.begin(), r.end());
+                // set<std::vector< int> > r_s;
+                // r_s.insert(r);
+                std::vector<int> common_data;
+                set_intersection(first.begin(),first.end(),r.begin(),r.end(), std::back_inserter(common_data));
+                // std::cout << "common data: {";
+                // for(int i = 0 ; i< common_data.size();i++){
+                //     std::cout  << common_data[i] << " , ";
+                // }
+                // cout << "}" << std::endl;
+                if (common_data.size()>0){
+                    first.insert(first.end(),r.begin(),r.end());
+                    sort(first.begin(), first.end());
+                    first.erase(unique(first.begin(), first.end()), first.end());
+                    // first_s.insert(r.begin(),r.end());
+                    // set<std::vector< int> >::iterator it = first_s.begin();
+                    // std::cout << "first vector: ";
+                    // for(int i = 0 ; i< first.size();i++){
+                    //     std::cout  << first[i] << " , ";
+                    // }
+                    // cout << "}" << std::endl;
+                    // for (it = first_s.begin(); it != first_s.end(); ++it){
+                    //     Print_Vector(*it);    
+                    // }
+                }
+                else{
+                    rest2.push_back(r);
+                }
+            }
+            rest = rest2;
+        }
+        out.push_back(first);
+        temp_l = rest;
+    }
+
+    std::cout << "final data: {";
+    for(int i = 0 ; i< out.size();i++){
+        Print_Vector(out[i]);
+    }
+    // set<set<std::vector< int> > >::iterator it = out.begin();
+
+    // for (it = out.begin(); it != out.end(); ++it)
+    // {
+    //     set<std::vector< int> >::iterator s;
+    //     for (s = it->begin(); s != it->end(); s++) {  
+
+    //         Print_Vector(*s);                    
+    //     }
+    //     std::cout << endl;
+    // }
+//             if len(first.intersection(set(r)))>0:
+//                 first |= set(r)
+//             else:
+//                 rest2.append(r)     
+//         rest = rest2
+
+//     out.append(first)
+//     l = rest
+
+// print(out)
+
+
+    // for (int i =0 ; i<obstacle_overlap_tab.size();i++){
+    //     if(true){
+    //         temp_points.clear();
+    //         for(Point curr_point : obstacle_list[i]){
+    //             temp_points+= point_xy(curr_point.x,curr_point.y);
+    //         }
+    //         boost::geometry::assign_points(obs1, temp_points);
+    //         std::cout << "obstacle #" << i << " overlaps with the following obs {";
+
+    //         for(int j=0;j<obstacle_overlap_tab[i].size();j++){    
+    //             temp_points.clear();
+    //             for(Point curr_point : obstacle_list[j]){
+    //                 temp_points+= point_xy(curr_point.x,curr_point.y);
+    //             }
+    //             boost::geometry::assign_points(obs2, temp_points);
+    //             correct(obs1);
+    //             correct(obs2);
+    //             std::vector<polygon> output;
+    //             boost::geometry::union_(obs1, obs2, output);
+    //             obs1 = output[0];
+    //             std::cout << obstacle_overlap_tab[i][j] << " , ";
+    //         }
+    //     }
+    //     else{
+    //         merged_obstacles.push_back(obstacle_list[i]);
+    //     }
+    //     std::cout << " }" << std::endl;
+    // }
+
+    // for(int i=0; i<merged_obstacles.size();i++){
+    //     if(merged_obstacles[i][0].x != merged_obstacles[i].back().x || merged_obstacles[i][0].y != merged_obstacles[i].back().y){
+    //         merged_obstacles[i].push_back(merged_obstacles[i][0]);
+    //     }
+    //     for(int j=1 ; j< merged_obstacles[i].size();j++){
+    //         cv::line(plot, cv::Point2f(merged_obstacles[i][j-1].x*enlarge,merged_obstacles[i][j-1].y*enlarge), cv::Point2f(merged_obstacles[i][j].x*enlarge,merged_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
+    //         cv::imshow("Clipper", plot);
+    //         cv::waitKey(0); 
+    //     }
+    // }
+//     std::cout << "Obstacle 1" << boost::geometry::dsv(obs1) << " has an area of " << boost::geometry::area(obs1) << std::endl;
+//     std::cout << "Obstacle 2" << boost::geometry::dsv(obs2) << " has an area of " << boost::geometry::area(obs2) << std::endl;
+//     
+
+//     
+//     // std::cout << "Obstacle union " << boost::geometry::dsv(output[0]) << " has an area of " << boost::geometry::area(output[0]) << std::endl;
+//     // int i = 0;
+//     // std::cout << "green || blue:" << std::endl;
+//     // BOOST_FOREACH(polygon const& p, output){
+//     //     std::cout << i++ << ": " << boost::geometry::area(p) << std::endl;
+//     // }
+// }   
+
+
+
+
+
+
+
+
+
 
     return obstacle_list;
 }
