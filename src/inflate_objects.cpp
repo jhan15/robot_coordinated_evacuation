@@ -68,39 +68,24 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
         }
 
         for(int i=0; i<new_obsticale_list.size();i++){
-            if(new_obsticale_list[i][0].x != new_obsticale_list[i].back().x || new_obsticale_list[i][0].y != new_obsticale_list[i].back().y){
-                new_obsticale_list[i].push_back(new_obsticale_list[i][0]);
-            }
-            for(int j=1 ; j< new_obsticale_list[i].size();j++){
-                cv::line(plot, cv::Point2f(new_obsticale_list[i][j-1].x*enlarge,new_obsticale_list[i][j-1].y*enlarge), cv::Point2f(new_obsticale_list[i][j].x*enlarge,new_obsticale_list[i][j].y*enlarge), cv::Scalar(255,0,0), 1);
+            // if(new_obsticale_list[i][0].x != new_obsticale_list[i].back().x || new_obsticale_list[i][0].y != new_obsticale_list[i].back().y){
+            //     new_obsticale_list[i].push_back(new_obsticale_list[i][0]);
+            // }
+            for(int j=0 ; j< new_obsticale_list[i].size();j++){
+                int nxt_ind = (j+1) % new_obsticale_list[i].size();
+                cv::line(plot, cv::Point2f(new_obsticale_list[i][j].x*enlarge,new_obsticale_list[i][j].y*enlarge), cv::Point2f(new_obsticale_list[i][nxt_ind].x*enlarge,new_obsticale_list[i][nxt_ind].y*enlarge), cv::Scalar(255,0,0), 1);
             }
         }
         for(int i=0; i<inflated_obsticale_list.size();i++){
-            if(inflated_obsticale_list[i][0].x != inflated_obsticale_list[i].back().x || inflated_obsticale_list[i][0].y != inflated_obsticale_list[i].back().y){
-                inflated_obsticale_list[i].push_back(inflated_obsticale_list[i][0]);
-            }
-            for(int j=1 ; j< inflated_obsticale_list[i].size();j++){
-                cv::line(plot, cv::Point2f(inflated_obsticale_list[i][j-1].x*enlarge,inflated_obsticale_list[i][j-1].y*enlarge), cv::Point2f(inflated_obsticale_list[i][j].x*enlarge,inflated_obsticale_list[i][j].y*enlarge), cv::Scalar(255,255,0), 1);
-            
+            // if(inflated_obsticale_list[i][0].x != inflated_obsticale_list[i].back().x || inflated_obsticale_list[i][0].y != inflated_obsticale_list[i].back().y){
+            //     inflated_obsticale_list[i].push_back(inflated_obsticale_list[i][0]);
+            // }
+            for(int j=0 ; j< inflated_obsticale_list[i].size();j++){
+                int nxt_ind = (j+1) % inflated_obsticale_list[i].size();
+                cv::line(plot, cv::Point2f(inflated_obsticale_list[i][j].x*enlarge,inflated_obsticale_list[i][j].y*enlarge), cv::Point2f(inflated_obsticale_list[i][nxt_ind].x*enlarge,inflated_obsticale_list[i][nxt_ind].y*enlarge), cv::Scalar(255,255,0), 1);
             }
         }
-        // draw solution
-        // for (unsigned j=1; j<clib_obsticale.size(); j++) {
-        //     cv::line(plot, cv::Point2f(clib_obsticale.at(j-1).X,clib_obsticale.at(j-1).Y), cv::Point2f(clib_obsticale.at(j).X,clib_obsticale.at(j).Y), cv::Scalar(255,0,0), 1);
-        // }
-        // cv::line(plot, cv::Point2f(clib_obsticale.at(clib_obsticale.size()-1).X,clib_obsticale.at(clib_obsticale.size()-1).Y), cv::Point2f(clib_obsticale.at(0).X,clib_obsticale.at(0).Y), cv::Scalar(255,0,0), 1);
-
-        // for (unsigned i=0; i<clib_merged_obs.size(); i++) {
-        //     ClipperLib::Path path = clib_merged_obs.at(i);
-        //     for (unsigned j=1; j<path.size(); j++) {
-        //         cv::line(plot, cv::Point2f(path.at(j-1).X,path.at(j-1).Y), cv::Point2f(path.at(j).X,path.at(j).Y), cv::Scalar(255,255,0), 2);
-        //     }
-
-        //     cv::line(plot, cv::Point2f(path.at(path.size()-1).X,path.at(path.size()-1).Y), cv::Point2f(path.at(0).X,path.at(0).Y), cv::Scalar(255,255,0), 2);
-
-        // }
     }
-
     return inflated_obsticale_list;
 }
 
@@ -175,7 +160,7 @@ Polygon inflate_borders(const Polygon &borders, float inflate_value, cv::Mat plo
 
 
 std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
-    std::vector<Polygon> new_obstacle_list;
+    std::vector<Polygon> trimmed_obstacles;
     std::vector<point_xy> temp_points;
     Polygon temp_obj;
     polygon obs_boost;
@@ -213,7 +198,7 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
             float y = boost::geometry::get<1>(*it);
             temp_obj.push_back({x,y});
         }
-        new_obstacle_list.push_back(temp_obj);
+        trimmed_obstacles.push_back(temp_obj);
         // std::string name1 = "/home/basemprince/workspace/project/output/obstacle_" + std::to_string(count)  + ".svg";
         // std::string name2 = "/home/basemprince/workspace/project/output/border_" + std::to_string(count)  + ".svg";
         // writeSvg_single(obs_boost,name1);
@@ -225,24 +210,40 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
         output.clear();
         // std::cout << "-----------------" << endl;
     }
+    std::cout << "size of new obstacle size : " << trimmed_obstacles.size() << endl;
+    for(int i=0; i<trimmed_obstacles.size();i++){
+    //     if(trimmed_obstacles[i][0].x != trimmed_obstacles[i].back().x || trimmed_obstacles[i][0].y != trimmed_obstacles[i].back().y){
+    //         trimmed_obstacles[i].push_back(trimmed_obstacles[i][0]);
+    //     }
+        std::cout << "size of new obstacle #: " << i << " is : " << trimmed_obstacles[i].size() << endl;
+        // for(int j=1 ; j< trimmed_obstacles[i].size();j++){
+    //     //     cv::line(plot, cv::Point2f(trimmed_obstacles[i][j-1].x*enlarge,trimmed_obstacles[i][j-1].y*enlarge), cv::Point2f(trimmed_obstacles[i][j].x*enlarge,trimmed_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
+    //     //     cv::imshow("Clipper", plot);
+    //     //     cv::waitKey(0); 
+        // }
+    }
 
-    // for(int i=0; i<new_obstacle_list.size();i++){
-    //     if(new_obstacle_list[i][0].x != new_obstacle_list[i].back().x || new_obstacle_list[i][0].y != new_obstacle_list[i].back().y){
-    //         new_obstacle_list[i].push_back(new_obstacle_list[i][0]);
+    std::cout << "size of old obstacle size : " << obstacle_list.size()<< endl;
+    for(int i=0; i<obstacle_list.size();i++){
+    //     if(trimmed_obstacles[i][0].x != trimmed_obstacles[i].back().x || trimmed_obstacles[i][0].y != trimmed_obstacles[i].back().y){
+    //         trimmed_obstacles[i].push_back(trimmed_obstacles[i][0]);
     //     }
-    //     for(int j=1 ; j< new_obstacle_list[i].size();j++){
-    //         cv::line(plot, cv::Point2f(new_obstacle_list[i][j-1].x*enlarge,new_obstacle_list[i][j-1].y*enlarge), cv::Point2f(new_obstacle_list[i][j].x*enlarge,new_obstacle_list[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
-    //         cv::imshow("Clipper", plot);
-    //         cv::waitKey(0); 
-    //     }
-    // }
-    
-    return new_obstacle_list;
+        std::cout << "size of obstacle #: " << i << " is : " << obstacle_list[i].size()<< endl;
+        for(int j=1 ; j< trimmed_obstacles[i].size();j++){
+            std::cout << "current segment in in obstiacle " << i << "is : (" << trimmed_obstacles[i][j-1].x << " , " << trimmed_obstacles[i][j-1].y << ") ( " << trimmed_obstacles[i][j].x << " , " << trimmed_obstacles[i][j].y << " )"<<std::endl;
+        //     cv::line(plot, cv::Point2f(trimmed_obstacles[i][j-1].x*enlarge,trimmed_obstacles[i][j-1].y*enlarge), cv::Point2f(trimmed_obstacles[i][j].x*enlarge,trimmed_obstacles[i][j].y*enlarge), cv::Scalar(0,0,0), 3);
+        //     cv::imshow("Clipper", plot);
+        //     cv::waitKey(0); 
+        }
+    }
+
+
+    return trimmed_obstacles;
 }
 
 
 
-// std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
+// std::vector<Polygon> trim_obstacles_old(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
 //     std::vector<Polygon> new_obstacles;
 //     Polygon new_borders = borders;
 //     Polygon new_obstacle;
@@ -392,13 +393,15 @@ bool overlap_check(const Polygon &pol1, const Polygon &pol2){
             obs1 = pol2;
             obs2 = pol1;
         }
-        for (int pt = 0; pt < obs1.size(); pt++){
+        for (int pt = 0; pt < obs1.size()-1; pt++){
             // to loop back to first point
-            int next_pt = (pt + 1) % obs1.size();
+            int next_pt = (pt + 1); // % obs1.size();
             Point axis_proj = {-(obs1[next_pt].y - obs1[pt].y), obs1[next_pt].x - obs1[pt].x};
+            std::cout << "current point -> ( " << obs1[pt].x << ", " << obs1[pt].y << ") , (" <<  obs1[next_pt].x << "," << obs1[next_pt].y << endl;
             float distance = sqrtf(axis_proj.x * axis_proj.x + axis_proj.y * axis_proj.y);
             axis_proj = {axis_proj.x / distance, axis_proj.y / distance};
-
+            std::cout << "distance calc: " << distance <<endl;
+            std::cout << "axis_proj: ( " << axis_proj.x << " , " << axis_proj.y << " )" << endl;
             float obs1_min = INFINITY;
             float obs1_max = -INFINITY;
             float obs2_min = INFINITY;
@@ -409,12 +412,14 @@ bool overlap_check(const Polygon &pol1, const Polygon &pol2){
                 obs1_min = min(obs1_min, j);
                 obs1_max = max(obs1_max, j);
             }
+            std::cout << "obs1 min: " << obs1_min << " , max " << obs1_max  << endl;
             // min and max points of obstacle 2 projection
             for (int i = 0; i < obs2.size(); i++){
                 float j = (obs2[i].x * axis_proj.x + obs2[i].y * axis_proj.y);
                 obs2_min = min(obs2_min, j);
                 obs2_max = max(obs2_max, j);
             }
+            std::cout << "obs2 min: " << obs2_min << " , max" << obs2_max  << endl;
             // if one axis has no overlap -> obstacles are not overlaping
             if (!(obs2_max >= obs1_min && obs1_max >= obs2_min)){
                 return false;
@@ -450,6 +455,23 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
         putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  cv::Scalar(24,30,100), 2);        
         obstacle_overlap_tab[curr_obs].push_back(curr_obs);
         for (int next_obs = curr_obs + 1; next_obs < obstacle_list.size(); next_obs++){
+
+            // for debugging
+            // int output7 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // int output8 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // auto color_rand = cv::Scalar(output7,output8,output9);
+            // for(int i= 0; i<obstacle_list[curr_obs].size();i++){
+            //     int ind = (i+1)%obstacle_list[curr_obs].size();
+            //     cv::line(plot, cv::Point2f(obstacle_list[curr_obs][i].x*enlarge,obstacle_list[curr_obs][i].y*enlarge), cv::Point2f(obstacle_list[curr_obs][ind].x*enlarge,obstacle_list[curr_obs][ind].y*enlarge), color_rand, 4);
+            // }
+            // for(int i= 0; i<obstacle_list[next_obs].size();i++){
+            //     int ind = (i+1)%obstacle_list[next_obs].size();
+            //     cv::line(plot, cv::Point2f(obstacle_list[next_obs][i].x*enlarge,obstacle_list[next_obs][i].y*enlarge), cv::Point2f(obstacle_list[next_obs][ind].x*enlarge,obstacle_list[next_obs][ind].y*enlarge), color_rand, 4);
+            // }
+            // cv::imshow("Clipper", plot);
+            // cv::waitKey(0); 
+
             overlap_result = overlap_check(obstacle_list[curr_obs], obstacle_list[next_obs]);
             std::cout << " obstacle # " << curr_obs << " and obstacle # " << next_obs << " are: " << overlap_result << std::endl;
             if(overlap_result){
@@ -619,8 +641,6 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
             cv::waitKey(0); 
         }
     }
-
-
 
     return merged_obstacles;
 ;
