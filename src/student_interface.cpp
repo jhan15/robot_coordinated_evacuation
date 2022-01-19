@@ -79,13 +79,14 @@ namespace student {
     cv::Mat plot(l - 300,l, CV_8UC3, cv::Scalar(255,255,255));
 
     // inflating the obsticales and borders of the arena
-    float inflate_value = 0;
+    float inflate_value = 20;
     
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
 
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
     inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
+    //inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
     inflated_obstacle_list =  merge_obstacles (inflated_obstacle_list, plot);
 
     // TO DO: implement a function to merge the obstacles that are over lapping
