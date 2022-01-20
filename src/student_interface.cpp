@@ -1090,10 +1090,17 @@ namespace student {
     int use; 
     int n;
 
+    // for each quad cell find the cells that have the same boundary --> find neigbour cells
     for(int cell1 = 0; cell1 < quad_cells.size(); cell1 ++) {
       same_boundary.clear();
+      //compare to the rest of the cells if it is not the same cell
       for(int cell2 = 0; cell2 < quad_cells.size(); cell2 ++) { 
         if(cell1 != cell2) {
+          // (if x of first quad 2nd point == x of first quad 1st point) and
+          //(y of first quad 3rd point == y of second quad 1st point or
+          //(y of first quad 3rd point == y of second quad 4th point or
+          //(y of first quad 2nd point == y of second quad 1st point or
+          //(y of first quad 2nd point == y of second quad 4th point)
           if((quad_cells[cell1][1].x == quad_cells[cell2][0].x) && 
             ((quad_cells[cell1][2].y == quad_cells[cell2][0].y || quad_cells[cell1][2].y == quad_cells[cell2][3].y) ||
             (quad_cells[cell1][1].y == quad_cells[cell2][0].y || quad_cells[cell1][1].y == quad_cells[cell2][3].y))) {
@@ -1199,7 +1206,6 @@ namespace student {
       }
     }
 
-
     //Source
     int min_ind = -1; 
     float min = INFINITY;
@@ -1278,7 +1284,7 @@ namespace student {
     graph_edges.push_back(temp_point);
 
     std::vector< std::vector<int> > graph;
-    std::vector<int> edges;
+    // std::vector<int> edges;
   
     // for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
     //   edges.clear();
@@ -1305,15 +1311,75 @@ namespace student {
         }
       }
     }
-
+    
     std::vector<int> my_path;
     my_path = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
-    
+    std::vector<POINT> new_graph_vertices;
+
+    //path optimization
+    for(int i = 0 ; i< my_path.size();i++){
+      new_graph_vertices.push_back({graph_vertices[my_path[i]].x,graph_vertices[my_path[i]].y});
+    }
+    // std::cout << "my_path size: " << my_path.size() << " new graph size: " << new_graph_vertices.size() << endl ;
+
+    SEGMENT temp_path;
+    SEGMENT temp_obs;
+    std::vector< std::vector<int> >  optimized_graph;
+    POINT inter_result;
+    for(int vertex = 0; vertex < new_graph_vertices.size();vertex++){
+      std::vector<int> empty;
+      optimized_graph.push_back(empty);
+      for(int vertex_2 = 0 ;vertex_2<new_graph_vertices.size();vertex_2++){
+        bool break_off = false;
+        if(vertex_2!=vertex ){
+          temp_path.a = {new_graph_vertices[vertex].x,new_graph_vertices[vertex].y};
+          temp_path.b = {new_graph_vertices[vertex_2].x,new_graph_vertices[vertex_2].y};
+          for(int obs = 0 ; obs< obstacles.size();obs++){
+            for(int pt = 0 ; pt< obstacles[obs].size()-1;pt++){
+              temp_obs.a = {obstacles[obs][pt].x,obstacles[obs][pt].y};
+              temp_obs.b = {obstacles[obs][pt+1].x,obstacles[obs][pt+1].y};
+              inter_result = intersection_trial(temp_obs,temp_path);
+              if(inter_result.x !=-1){
+                break_off = true;
+                break;
+              }
+            }
+            if(break_off){
+              break;
+            }
+          }
+          if(break_off){
+            continue;
+          }
+          // std::cout << "vertex1: " << vertex << " vertex2: " << vertex_2 << endl;
+          // std::cout << "temp obs: ( " << temp_obs.a.x << " , " << temp_obs.a.y << " ) ( " << temp_obs.b.x <<" ," << temp_obs.b.y << " )"<< endl;
+          // std::cout << "temp obs: ( " << temp_path.a.x << " , " << temp_path.a.y << " ) ( " << temp_path.b.x <<" ," << temp_path.b.y << " )"<< endl;
+          // inter_result = intersection_trial(temp_obs,temp_path);
+          // std::cout << "intersection_result: (" << inter_result.x<< " , " << inter_result.y << ")" << endl;
+          optimized_graph[vertex].insert(optimized_graph[vertex].begin(),vertex_2);
+        }
+      }
+      // std::cout << "-------------" << endl;
+    }
+    // cout << "size of optimized graph: " << optimized_graph.size();
+
+    std::vector<int> optimzed_path;
+    optimzed_path = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
+
     cout << endl;
     cout <<"GRAPH VERTICES: "<< endl; 
     for(int i = 0; i < graph_vertices.size(); i++){
       cout << "(" << graph_vertices[i].x << "," << graph_vertices[i].y;
       if(i == graph_vertices.size() - 1) { cout << ") "; }
+      else cout << "), ";
+    }
+    cout << endl;
+    cout << endl;
+
+    cout <<"NEW GRAPH VERTICES: "<< endl; 
+    for(int i = 0; i < new_graph_vertices.size(); i++){
+      cout << "(" << new_graph_vertices[i].x << "," << new_graph_vertices[i].y;
+      if(i == new_graph_vertices.size() - 1) { cout << ") "; }
       else cout << "), ";
     }
     cout << endl;
@@ -1327,6 +1393,19 @@ namespace student {
         if(k != (graph[j].size() - 1)) {cout << ", ";}
       }
       if(j == (graph.size() - 1)) {cout << ") "; }
+      else cout << "), ";
+    }
+    cout << endl;
+    cout << endl;
+
+    cout <<"OPTIMIZED GRAPH: "<< endl;
+    for(int j = 0; j < optimized_graph.size(); j++){
+      cout << "(";
+      for(int k = 0; k < optimized_graph[j].size(); k++) {  
+        cout << optimized_graph[j][k];
+        if(k != (optimized_graph[j].size() - 1)) {cout << ", ";}
+      }
+      if(j == (optimized_graph.size() - 1)) {cout << ") "; }
       else cout << "), ";
     }
     cout << endl;
@@ -1360,14 +1439,11 @@ namespace student {
     ABC.insert( ABC.end(), AB.begin(), AB.end() );
     ABC.insert( ABC.end(), other_cells.begin(), other_cells.end() );
     }
-    int output1 = 0;
-    int output2 = 0;
-    int output3 = 0;
     // printing the cells
     for (unsigned i=0; i<ABC.size(); i++) {
-      output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
-      output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
-      output3 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+      int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+      int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+      int output3 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
       auto color_rand = cv::Scalar(output1,output2,output3);
       for(unsigned j=1; j<ABC[i].size(); j++){
         cv::Point2f point_center(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge);
@@ -1394,6 +1470,21 @@ namespace student {
       // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
     }
 
+    // printing graph edges
+    // for (unsigned i=0; i<graph_edges.size(); i++) {
+    //   int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+    //   std::cout << "graph edge: #" << i << " ( " << (graph_edges[i].x*enlarge) << " , " << (graph_edges[i].y*enlarge) << " )" <<endl;
+    //   auto color_rand = cv::Scalar(output7,output8,output9);
+    //   cv::Point2f centerCircle(graph_edges[i].x*enlarge,graph_edges[i].y*enlarge);
+    //   cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+    //   std::string text = std::to_string(i);
+    //   putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
+    //       cv::imshow("Clipper", plot);
+    // cv::waitKey(0);   
+    // }
+
     //draw start and end point
     cv::Point2f centerCircle11(start_point[0].x*enlarge,start_point[0].y*enlarge);
     cv::circle(plot, centerCircle11, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
@@ -1404,22 +1495,39 @@ namespace student {
     std::string text2 = "end_point";
     putText(plot, text2, centerCircle111, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
 
-    //drawing the map_lines
+    //drawing the map_lines [graph]
     for (unsigned i=0; i<graph.size(); i++) {
       for(unsigned j=0; j<graph[i].size(); j++){
         cv::line(plot, cv::Point2f(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge), cv::Point2f(graph_vertices[graph[i][j]].x*enlarge,graph_vertices[graph[i][j]].y*enlarge), cv::Scalar(255,0,0), 1);
+    //  cv::imshow("Clipper", plot);
+    // cv::waitKey(0); 
       }
     }
     cv::imshow("Clipper", plot);
     cv::waitKey(0);  
-    //drawing the path_lines
+    //drawing the original path_lines
     for (unsigned i=1; i<my_path.size(); i++) {
       cv::line(plot, cv::Point2f(graph_vertices[my_path[i-1]].x*enlarge,graph_vertices[my_path[i-1]].y*enlarge), cv::Point2f(graph_vertices[my_path[i]].x*enlarge,graph_vertices[my_path[i]].y*enlarge), cv::Scalar(50,255,0), 2);
     }
+    //drawing the optimzed_graph
+    // for(int i = 0; i < optimized_graph.size(); i++){
+    //   cout << "i: " << i << endl;
+    //   for(int j = 0; j < optimized_graph[i].size(); j++) {  
+    //     cout << "j: " << j << endl;
+    //     cout << "1.x: " << new_graph_vertices[i].x;
+    //     cout << " 1.y: " << new_graph_vertices[i].x<<endl;
+    //     cout << "2.x: " << new_graph_vertices[optimized_graph[i][j]].x;
+    //     cout << " 2.y: " << new_graph_vertices[optimized_graph[i][j]].y<<endl;
+    //     cv::line(plot, cv::Point2f(new_graph_vertices[i].x*enlarge,new_graph_vertices[i].y*enlarge), cv::Point2f(new_graph_vertices[optimized_graph[i][j]].x*enlarge,new_graph_vertices[optimized_graph[i][j]].y*enlarge), cv::Scalar(255,0,0), 1);
 
-    //print the path and inflated obsticles
+    //   }
+    // }
+    //drawing the optimized path_lines
+    for (unsigned i=1; i<optimzed_path.size(); i++) {
+      cv::line(plot, cv::Point2f(new_graph_vertices[optimzed_path[i-1]].x*enlarge,new_graph_vertices[optimzed_path[i-1]].y*enlarge), cv::Point2f(new_graph_vertices[optimzed_path[i]].x*enlarge,new_graph_vertices[optimzed_path[i]].y*enlarge), cv::Scalar(0,20,255), 2);
+    }
 
-    // cv::flip(plot, plot, 1);
+
     cv::imshow("Clipper", plot);
     cv::waitKey(0);    
     // --------------------------------------------
