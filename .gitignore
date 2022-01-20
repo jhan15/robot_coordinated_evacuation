@@ -1,6 +1,6 @@
 # Build folder
 build/
-
+output/
 # Prerequisites
 *.d
 

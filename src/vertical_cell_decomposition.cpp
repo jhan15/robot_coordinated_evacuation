@@ -102,7 +102,7 @@ bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segm
         for (int pt = 0; pt < n; pt++ ){
             obs_side.a = obs[pt];
             obs_side.b = obs[pt+1];
-            if(segment_intersection(segment,obs_side,false).x != -1){
+            if(intersection_trial(segment,obs_side).x != -1){
                 res = false;
                 break_out = true;
                 break;
@@ -245,3 +245,68 @@ POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print = false
     }
     return intersection_p;  
 }
+
+POINT intersection_trial(SEGMENT sigment1, SEGMENT sigment2){
+    POINT intersection_pt;
+    boost::geometry::model::linestring<point_xy> line1, line2;
+    typedef boost::geometry::model::segment<point_xy> Segment;
+    Segment AB( point_xy(sigment1.a.x,sigment1.a.y), point_xy(sigment1.b.x,sigment1.b.y) );
+    Segment CD( point_xy(sigment2.a.x,sigment2.a.y), point_xy(sigment2.b.x,sigment2.b.y) );
+
+    std::vector<point_xy> result;
+    boost::geometry::intersection(AB, CD,result);
+
+    if (result.size()>0){
+        intersection_pt = {float(boost::geometry::get<0>(result[0])),float(boost::geometry::get<1>(result[0]))};
+    }
+    else{
+        intersection_pt = {-1,-1};
+    }
+    return intersection_pt;
+}
+
+// bool points_successive (POINT a, POINT b, std::vector<POINT>  obstacle){
+//         for(int i= 0 ;i< obstacle.size();i++){
+//             if(a.x == obstacle[i].x && a.y == obstacle[i].y){
+//                 std::cout << " a found" << endl;
+//                 if(i==obstacle.size()-1){
+//                     return false;
+//                 }
+//                 std::cout << " next point: (" << obstacle[i+1].x << " , " << obstacle[i+1].y 
+//                 << ") point b : ( " << b.x << " , " << b.y << endl;
+//                 return (obstacle[i+1].x == b.x && obstacle[i+1].y == b.y);
+//             }
+//             if(b.x == obstacle[i].x && b.y == obstacle[i].y){
+//                 std::cout << " b found" << endl;
+//                 if(i==obstacle.size()-1){
+//                     return false;
+//                 }
+//                 std::cout << " next point: (" << obstacle[i+1].x << " , " << obstacle[i+1].y 
+//                 << ") point a : ( " << a.x << " , " << a.y << endl;
+//                 return (obstacle[i+1].x == a.x && obstacle[i+1].y == a.y);
+//             }
+//         }
+//     return false;
+// }
+
+// int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles){
+//     int obs1_num = -1;
+//     int obs2_num = -1;
+//     for(POINT curr_point : obstacles){
+//         std::cout << "current point: ( " << curr_point.x << " , " << curr_point.y << ") point a: (" << a.x << " , " << a.y << ") " << endl;
+//         if(curr_point.x == a.x && curr_point.y == a.y){
+//             obs1_num = curr_point.obs;
+//         }
+//         if(curr_point.x == b.x && curr_point.y == b.y){
+//             obs2_num = curr_point.obs;
+//         }
+//         if(obs1_num !=-1 && obs2_num != -1){
+//             break;
+//         }
+//     }
+//     std::cout << "obs1: " << obs1_num << " obs2: " << obs2_num << endl;
+//     if(obs1_num == obs2_num){
+//         return obs1_num;
+//     }
+//     return -1;
+// }

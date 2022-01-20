@@ -5,8 +5,13 @@
 #include <vector>
 #include <math.h>
 #include <algorithm>
+#include <boost/geometry.hpp>
+#include <boost/geometry/algorithms/assign.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
 	
 using namespace std;
+typedef boost::geometry::model::d2::point_xy<double> point_xy;
 
 #ifndef ROADMAP
 #define ROADMAP
@@ -35,5 +40,8 @@ float find_dist(POINT pt1, POINT pt2);
 bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment);
 std::vector<int> backtrace(std::vector<int> parent, int start, int end);
 std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int target);
+POINT intersection_trial(SEGMENT sigment1, SEGMENT sigment2);
+// bool points_successive (POINT a, POINT b, std::vector<POINT> obstacle);
+// int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles);
 
 #endif

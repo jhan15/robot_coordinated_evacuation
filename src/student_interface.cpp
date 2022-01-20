@@ -79,7 +79,7 @@ namespace student {
     cv::Mat plot(l - 300,l, CV_8UC3, cv::Scalar(255,255,255));
 
     // inflating the obsticales and borders of the arena
-    float inflate_value = 20;
+    float inflate_value = 30;
     
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
 
@@ -153,13 +153,13 @@ namespace student {
       obstacle.clear();
     }
 
-    //std::cout<<"\n>>>> Obstacles:"<<std::endl;
-    //for(int i = 0; i < obstacles.size(); i++){
+    // std::cout<<"\n>>>> Obstacles:"<<std::endl;
+    // for(int i = 0; i < obstacles.size(); i++){
     //  std::cout<<"\nObstacle "<< i << endl;
     //  for(int j = 0; j < obstacles[i].size(); j++){
     //    cout<< "x=" << obstacles[i][j].x << " y=" << obstacles[i][j].y << endl;
     //  }
-    //}
+    // }
   
     //sorting the vertices by their x value in increasing order
     std::vector<POINT> sorted_vertices;
@@ -168,7 +168,7 @@ namespace student {
     for(int curr_vertex = vertices_num - 1; curr_vertex >= 0; curr_vertex--) {
       sorted_vertices.push_back(POINT{-1,-1,-1,-1});
     }
-       
+    
     int add_to_list;
 
     for(int curr_vertex = vertices_num - 1; curr_vertex >= 0; curr_vertex--) {
@@ -201,11 +201,11 @@ namespace student {
 
     //print out the vertices of the obstacles
     for(int i = 0; i < sorted_vertices.size(); i++){
-      //  cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
-       cv::Point2f centerCircle(sorted_vertices[i].x*enlarge,sorted_vertices[i].y*enlarge);
-       cv::circle(plot, centerCircle, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
-      //  std::string text = std::to_string(sorted_vertices[i].obs);
-      //  putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
+        // cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
+        cv::Point2f centerCircle(sorted_vertices[i].x*enlarge,sorted_vertices[i].y*enlarge);
+        cv::circle(plot, centerCircle, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
+        // std::string text = std::to_string(sorted_vertices[i].obs);
+        // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
     }
     cv::imshow("Clipper", plot);
     cv::waitKey(0);  
@@ -214,7 +214,7 @@ namespace student {
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
 
-    //cout << "\nlimits " << y_limit_lower << " " << y_limit_upper << endl;
+    // cout << "\nlimits " << y_limit_lower << " " << y_limit_upper << endl;
 
     std::vector< SEGMENT > open_line_segments;
     SEGMENT curr_segment;
@@ -255,9 +255,6 @@ namespace student {
       curr_segment.b = temp_point;
       upper_obs_pt = temp_point;
 
-     
-    
-
       for(int obs = 0; obs < obstacles.size(); obs++) { 
         for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
           temp_segment.a = obstacles[obs][vertex];
@@ -275,15 +272,16 @@ namespace student {
 
           // check if the current vertex of the obsticale is equal to any of the segment points
           // this is to stop counting the current vertex as an intersection
-          if((curr_segment.a.x == pt.x && curr_segment.a.y == pt.y) ||
-          (curr_segment.b.x == pt.x && curr_segment.a.y == pt.y) || 
-          (temp_segment.a.x == pt.x && temp_segment.a.y == pt.y) ||
-          (temp_segment.b.x == pt.x && temp_segment.b.y == pt.y)){
-            intersection_point = {-1,-1};
-          }
-          else{
-            intersection_point = segment_intersection(curr_segment, temp_segment,false);
-          }
+          // if((curr_segment.a.x == pt.x && curr_segment.a.y == pt.y) ||
+          // (curr_segment.b.x == pt.x && curr_segment.a.y == pt.y) || 
+          // (temp_segment.a.x == pt.x && temp_segment.a.y == pt.y) ||
+          // (temp_segment.b.x == pt.x && temp_segment.b.y == pt.y)){
+          //   intersection_point = {-1,-1};
+          // }
+          // else{
+            // intersection_point = segment_intersection(curr_segment, temp_segment,false);
+            intersection_point = intersection_trial(curr_segment, temp_segment);
+          // }
 
           if(intersection_point.x != -1){ 
             // printing the intersection points of the vertical lines with the obstacles and showing whats left from them
@@ -294,11 +292,11 @@ namespace student {
             // cv::circle(plot, point_center, 5,cv::Scalar( 0, 10, 125 ),2);
             // cv::imshow("Clipper", plot);
             // cv::waitKey(0);
-            // std::cout << "temp_segment.a " << temp_segment.a.x << " " << temp_segment.a.y << endl;
-            // std::cout << "temp_segment.b " << temp_segment.b.x << " " << temp_segment.b.y << endl;
-            // std::cout << "curr_segment.a " << curr_segment.a.x << " " << curr_segment.a.y << endl;
-            // std::cout << "curr_segment.b " << curr_segment.b.x << " " << curr_segment.b.y << endl;
-            // std::cout << "intersection_point " << intersection_point.x << " " << intersection_point.y << endl;
+            // std::cout << "temp_segment.a (" << temp_segment.a.x << " , " << temp_segment.a.y << " )" << endl;
+            // std::cout << "temp_segment.b (" << temp_segment.b.x << " , " << temp_segment.b.y << " )"<< endl;
+            // std::cout << "curr_segment.a (" << curr_segment.a.x << " , " << curr_segment.a.y << " )"<< endl;
+            // std::cout << "curr_segment.b (" << curr_segment.b.x << " , " << curr_segment.b.y << " )"<< endl;
+            // std::cout << "intersection_point (" << intersection_point.x << " , " << intersection_point.y << " )"<< endl;
             if(obs == pt.obs) {
               if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
                 if(intersection_point.y > pt.y) {up = 1;}
@@ -384,7 +382,7 @@ namespace student {
       // a is lower limit , b is upper limit
       // if lower limit is blocked -> don't look down
       if(curr_segment.a.x == -1) {done[0] = 1;}
-      // if upper lmit is blocked -> don't look up :)
+      // if upper limit is blocked -> don't look up :)
       if(curr_segment.b.x == -1) {done[1] = 1;}
       // if upper and lower limits are blocked -> figure out something else
       if((curr_segment.a.x == -1) && (curr_segment.b.x == -1)) {done[2] = 0;}
@@ -396,17 +394,30 @@ namespace student {
         group.clear();
         trapezoids.clear();
         bool double_check = false;
-
+        
         next_segment = open_line_segments[j];
         next_vertex = sorted_vertices[j];
-        // check to see if the next segemnt is completely blocked on both its points
+        // check to see if the next segemnt is completely free from both sides
         double_check = next_segment.a.x != -1 && next_segment.b.x != -1;
 
-        // group 0 -> not blocked from the bottom
-        // group 1 -> not blocked from the top
+        // int output13 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        // int output14 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        // int output15 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+        // auto color_rand = cv::Scalar(output13,output14,output15);
+        // cv::line(plot, cv::Point2f(next_segment.a.x*enlarge,next_segment.a.y*enlarge), cv::Point2f(next_segment.b.x*enlarge,next_segment.b.y*enlarge), color_rand, 1);   
+        // cv::line(plot, cv::Point2f(curr_segment.a.x*enlarge,curr_segment.a.y*enlarge), cv::Point2f(curr_segment.b.x*enlarge,curr_segment.b.y*enlarge), color_rand, 1);
+        //         std::cout << "curr_seg: (" << (curr_segment.a.x*enlarge) << ", " << (curr_segment.a.y*enlarge)<< " ) , ( " << (curr_segment.b.x*enlarge) << " , " << (curr_segment.b.y*enlarge) << endl;
+        // std::cout << "next_seg: (" << (next_segment.a.x*enlarge) << ", " << (next_segment.a.y*enlarge)<< " ) , ( " << (next_segment.b.x*enlarge) << " , " << (next_segment.b.y*enlarge) << endl;
+                
+        // cv::imshow("Clipper", plot);
+        // cv::waitKey(0); 
+
+
+        // group 0 -> not blocked from the top
+        // group 1 -> not blocked from the bottom
         // group 2 -> completely blocked
 
-        // if not blocked from the bottom
+        // if not blocked from the top
         if(done[0] == 0) {
           // std::cout << "test -> done[0]  == 0 [not blocked from the bottom" << std::endl;
           // and the next vertical line is not completely blocked on both of its points
@@ -424,7 +435,6 @@ namespace student {
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
-
             // print debug temp points
             // std::cout << "temp_points1: (" << temp_points1[0].x << " , " << temp_points1[0].y << ") , (" << temp_points1[1].x << " , " << temp_points1[1].y << ")" << std::endl;
             // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
@@ -481,6 +491,7 @@ namespace student {
             // temp_points1.clear();
             // temp_points2.clear();
           }
+          // if next segment is not blocked from the bottom
           else if(next_segment.a.x != -1) {
             // temp_points1.push_back(curr_segment.a);
             // temp_points1.push_back(curr_vertex);
@@ -489,6 +500,14 @@ namespace student {
             temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
+            // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+            // auto color_rand = cv::Scalar(output4,output5,output6);
+            // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 1);           
+            // cv::imshow("Clipper", plot);
+            // cv::waitKey(0); 
+
             group.push_back(0);
             // trapezoids
             temp_points1.clear();
@@ -501,6 +520,7 @@ namespace student {
             // temp_points1.clear();
             // temp_points2.clear();
           }
+          //if the next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
             // temp_points1.push_back(curr_segment.a);
             // temp_points1.push_back(curr_vertex);
@@ -510,6 +530,8 @@ namespace student {
             temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
+
+
 
             // temp_points1.clear();
             // temp_points1.push_back(curr_segment.a);
@@ -541,7 +563,10 @@ namespace student {
         }
         // temp_points1.clear();
         // temp_points2.clear();
+
+        // not blocked from the bottom
         if(done[1] == 0) {
+          // if next segment is free from both sides
           if(double_check) {
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
@@ -579,6 +604,7 @@ namespace student {
             // temp_points1.clear();
             // temp_points2.clear();
           }
+          // if next segement not blocked from the bottom
           else if(next_segment.a.x != -1) {
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
@@ -599,6 +625,7 @@ namespace student {
             // temp_points1.clear();
             // temp_points2.clear();
           }
+          // if next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
@@ -639,7 +666,10 @@ namespace student {
         }
         // temp_points1.clear();
         // temp_points2.clear();
+
+        //blocked from the top
         if(done[2] == 0) {
+          // if next segement free from both sides
           if(double_check) {
             // temp_points2.push_back(next_segment.a);
             // temp_points2.push_back(next_vertex);          
@@ -753,13 +783,16 @@ namespace student {
             for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) { //for index4 in range(len(obs)-1):
               temp_segment.a = obstacles[obs][vertex];
               temp_segment.b = obstacles[obs][vertex+1];
-              temp_point = segment_intersection(lines_to_check[line], temp_segment,false);
-              if (temp_point.x != -1){
-                bool _check = intersect(temp_segment.a,temp_segment.b,lines_to_check[line].a,lines_to_check[line].b,false);
-                if (_check == 0){
-                  temp_point = {-1,-1};
-                }
-              }
+              // temp_point = segment_intersection(lines_to_check[line], temp_segment,false);
+
+              
+              temp_point = intersection_trial(lines_to_check[line], temp_segment);
+              // if (temp_point.x != -1){
+              //   bool _check = intersect(temp_segment.a,temp_segment.b,lines_to_check[line].a,lines_to_check[line].b,false);
+              //   if (_check == 0){
+              //     temp_point = {-1,-1};
+              //   }
+              // }
               // print the intersection prosedure
               // if ((i == 34 || i == 35) && temp_point.x != -1){
                 // std::cout << "-- (before recall) intersection_point: " << "(" << temp_point.x*enlarge << " , " << temp_point.y*enlarge << ")" << std::endl;
@@ -804,7 +837,6 @@ namespace student {
           
           // std::cout << "-- no_intersection stat: " << no_intersection[0] << " , "  << no_intersection[1] << " , " << no_intersection[2] << std::endl;
           if(no_intersection[group[line]] == 1) {done[group[line]] = 1;}      //if (  ok[q[2]] is True ):   //done[q[2]] = True;
-
         }
 
         for(int line = 0; line < lines_to_check.size(); line++) {
@@ -1201,6 +1233,10 @@ namespace student {
         } 
       }
     }
+    if(min_ind == -1){
+      std::cout << "the start point is unreachable" << std::endl;
+      return false;
+    }
       // cv::imshow("Clipper", plot);
       // cv::waitKey(0);
     graph_vertices.push_back(start_point[0]); //TODO: change for more than one robot
@@ -1217,7 +1253,7 @@ namespace student {
 
     // destination
     min_ind = -1; 
-    min = 9999999;
+    min = INFINITY;
 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
       temp_segment.a = end_point[0]; //TODO: change for more than one robot
@@ -1229,6 +1265,10 @@ namespace student {
           min_ind = vertex;
         } 
       }
+    }
+    if(min_ind == -1){
+      std::cout << "the end point is unreachable" << std::endl;
+      return false;
     }
 
     graph_vertices.push_back(end_point[0]); //TODO: change for more than one robot
@@ -1343,16 +1383,16 @@ namespace student {
     cv::imshow("Clipper", plot);
     cv::waitKey(0);  
     //drawing the points
-    // for (unsigned i=0; i<graph_vertices.size(); i++) {
-    //   int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   auto color_rand = cv::Scalar(output7,output8,output9);
-    //   cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
-    //   cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
-    //   std::string text = std::to_string(i);
-    //   putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
-    // }
+    for (unsigned i=0; i<graph_vertices.size(); i++) {
+      int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+      int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+      int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
+      auto color_rand = cv::Scalar(output7,output8,output9);
+      cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
+      cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
+      // std::string text = std::to_string(i);
+      // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
+    }
 
     //draw start and end point
     cv::Point2f centerCircle11(start_point[0].x*enlarge,start_point[0].y*enlarge);
