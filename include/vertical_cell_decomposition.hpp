@@ -28,12 +28,7 @@ struct SEGMENT {
     POINT b;
 };
 
-POINT intersection(SEGMENT segment1, SEGMENT segment2);
-float determinant( POINT a , POINT b);
-bool counter_clockwise(POINT A,POINT B,POINT C);
-bool intersect(POINT A,POINT B,POINT C,POINT D,bool print);
-POINT line_intersection(POINT A, POINT B, POINT C, POINT D) ;
-POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print);
+
 POINT centroid(std::vector<POINT> vertices);
 float polygon_area(std::vector<POINT> vertices, int vertices_num);
 float find_dist(POINT pt1, POINT pt2);
@@ -43,5 +38,11 @@ std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int targ
 POINT intersection_trial(SEGMENT sigment1, SEGMENT sigment2);
 // bool points_successive (POINT a, POINT b, std::vector<POINT> obstacle);
 // int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles);
+// POINT intersection(SEGMENT segment1, SEGMENT segment2);
+// float determinant( POINT a , POINT b);
+// bool counter_clockwise(POINT A,POINT B,POINT C);
+// bool intersect(POINT A,POINT B,POINT C,POINT D,bool print);
+// POINT line_intersection(POINT A, POINT B, POINT C, POINT D) ;
+// POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print);
 
 #endif
