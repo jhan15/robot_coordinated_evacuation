@@ -362,7 +362,9 @@ namespace student {
     //Finding cells
     POINT curr_vertex;
     SEGMENT next_segment;
+    SEGMENT next_next_segment;
     POINT next_vertex;
+    POINT next_next_vertex;
     std::vector<SEGMENT> lines_to_check;
     std::vector<int> group;
     std::vector< std::vector<POINT> > trapezoids;
@@ -372,6 +374,7 @@ namespace student {
     std::vector< std::vector<POINT> > cells;
     int break_now;
     std::vector<int> done;
+    bool extra_search = true;
 
     for(int i = 0; i < open_line_segments.size(); i++) {
       curr_segment = open_line_segments[i];
@@ -394,12 +397,18 @@ namespace student {
         group.clear();
         trapezoids.clear();
         bool double_check = false;
+        bool next_two_seg_same_x = false;
         
         next_segment = open_line_segments[j];
         next_vertex = sorted_vertices[j];
+        if( j != open_line_segments.size()-1 && extra_search){
+          next_next_segment = open_line_segments[j+1];
+          next_next_vertex = sorted_vertices[j+1];
+          next_two_seg_same_x = (next_vertex.x == next_next_vertex.x);
+        }
         // check to see if the next segemnt is completely free from both sides
         double_check = next_segment.a.x != -1 && next_segment.b.x != -1;
-
+        
         // int output13 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
         // int output14 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
         // int output15 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
@@ -417,11 +426,13 @@ namespace student {
         // group 1 -> not blocked from the bottom
         // group 2 -> completely blocked
 
-        // if not blocked from the top
+        // if not blocked from the bottom
         if(done[0] == 0) {
+          // cout << "--------cur seg is not blocked from bottom----------" << endl;
           // std::cout << "test -> done[0]  == 0 [not blocked from the bottom" << std::endl;
-          // and the next vertical line is not completely blocked on both of its points
+          // and the next vertex is free from both sides
           if(double_check) {
+            // cout << "--next seg is free" << endl;
             // make a segment out of the lower limit of the current vertical line, 
             // and the current point of the obstacle
             // temp_points1.push_back(curr_segment.a);
@@ -493,6 +504,7 @@ namespace student {
           }
           // if next segment is not blocked from the bottom
           else if(next_segment.a.x != -1) {
+            // cout << "--next seg is not blocked from bottom" << endl;
             // temp_points1.push_back(curr_segment.a);
             // temp_points1.push_back(curr_vertex);
             // temp_points2.push_back(next_segment.a);
@@ -516,12 +528,19 @@ namespace student {
             // temp_points1.push_back(next_vertex);
             // temp_points1.push_back(curr_vertex);
             trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
-
-            // temp_points1.clear();
-            // temp_points2.clear();
+            if(next_two_seg_same_x && (next_next_segment.b.x != -1) && (next_next_segment.a.x == -1) && extra_search){
+              // cout << "--next next seg is not blocked from top" << endl;
+              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
+              lines_to_check.push_back(temp_segment);
+              group.push_back(0);
+              temp_points1.clear();
+              trapezoids.push_back({curr_segment.a,next_next_vertex,next_next_segment.b,curr_vertex});              
+            }
           }
           //if the next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
+            // cout << "--next seg is not blocked from top" << endl;
             // temp_points1.push_back(curr_segment.a);
             // temp_points1.push_back(curr_vertex);
             // temp_points2.push_back(next_segment.b);
@@ -539,7 +558,14 @@ namespace student {
             // temp_points1.push_back(next_segment.b);
             // temp_points1.push_back(curr_vertex);
             trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
-
+            if(next_two_seg_same_x && (next_next_segment.a.x != -1) && (next_next_segment.b.x == -1)  && extra_search){
+              // cout << "--next next seg is not blocked from bottom" << endl;
+              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
+              lines_to_check.push_back(temp_segment);
+              group.push_back(0);
+              trapezoids.push_back({curr_segment.a,next_next_segment.a,next_next_vertex,curr_vertex});              
+            }
             // temp_points1.clear();
             // temp_points2.clear();
           }
@@ -566,8 +592,10 @@ namespace student {
 
         // not blocked from the bottom
         if(done[1] == 0) {
+          // cout << "--------cur seg is not blocked from top----------" << endl;
           // if next segment is free from both sides
           if(double_check) {
+            // cout << "--next seg is free" << endl;
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
             // temp_points2.push_back(next_segment.a);
@@ -606,6 +634,7 @@ namespace student {
           }
           // if next segement not blocked from the bottom
           else if(next_segment.a.x != -1) {
+            // cout << "--next seg is not blocked from bottom" << endl;
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
             // temp_points2.push_back(next_segment.a);
@@ -621,12 +650,19 @@ namespace student {
             // temp_points1.push_back(next_vertex);
             // temp_points1.push_back(curr_segment.b);
             trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
-
+            if(next_two_seg_same_x && (next_next_segment.b.x != -1)  && (next_next_segment.a.x == -1) && extra_search){
+              // cout << "--next next seg is not blocked from top" << endl;
+              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
+              lines_to_check.push_back(temp_segment);
+              trapezoids.push_back({curr_vertex,next_next_vertex,next_next_segment.b,curr_segment.b});              
+            }
             // temp_points1.clear();
             // temp_points2.clear();
           }
           // if next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
+            // cout << "--next seg is not blocked from top" << endl;
             // temp_points1.push_back(curr_segment.b);
             // temp_points1.push_back(curr_vertex);
             // temp_points2.push_back(next_segment.b);
@@ -643,6 +679,14 @@ namespace student {
             // temp_points1.push_back(curr_segment.b);
             trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
 
+            if(next_two_seg_same_x && (next_next_segment.a.x != -1)  && (next_next_segment.b.x == -1)  && extra_search){
+              // cout << "--next next seg is not blocked from bottom" << endl;
+              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
+              lines_to_check.push_back(temp_segment);
+              group.push_back(0);
+              trapezoids.push_back({curr_vertex,next_next_segment.a,next_next_vertex,curr_segment.b});              
+            }
             // temp_points1.clear();
             // temp_points2.clear();
           }
@@ -667,7 +711,7 @@ namespace student {
         // temp_points1.clear();
         // temp_points2.clear();
 
-        //blocked from the top
+        //blocked from both
         if(done[2] == 0) {
           // if next segement free from both sides
           if(double_check) {
@@ -875,15 +919,12 @@ namespace student {
       }
     }
 
-    // int output4 = 0;
-    // int output5 = 0;
-    // int output6 = 0;
-    // int enlarge = 600;
+
     // std::cout << "cell size " << cells.size() << std::endl;
     // for (unsigned i=0; i<cells.size(); i++) {
-    //   output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-    //   output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-    //   output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
+    //   int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
     //   auto color_rand = cv::Scalar(output4,output5,output6);
     //   for(unsigned j=1; j<cells[i].size(); j++){
     //     cv::Point2f point_center(cells[i][j-1].x*enlarge,cells[i][j-1].y*enlarge);
