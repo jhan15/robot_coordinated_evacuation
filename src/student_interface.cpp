@@ -1192,7 +1192,6 @@ namespace student {
       path[0].points.emplace_back(0, graph_vertices[my_path[node]].x, graph_vertices[my_path[node]].y, 0, 0);
     }
 
-
     // FOR DEBUG
     // drawing the cell decomposition
     std::vector< std::vector<POINT> > AB;
@@ -1296,8 +1295,6 @@ namespace student {
     for (unsigned i=1; i<optimized_path.size(); i++) {
       cv::line(plot, cv::Point2f(new_graph_vertices[optimized_path[i-1]].x*enlarge,new_graph_vertices[optimized_path[i-1]].y*enlarge), cv::Point2f(new_graph_vertices[optimized_path[i]].x*enlarge,new_graph_vertices[optimized_path[i]].y*enlarge), cv::Scalar(0,20,255), 2);
     }
-
-
     cv::imshow("Clipper", plot);
     cv::waitKey(0);    
     // --------------------------------------------
@@ -1308,6 +1305,7 @@ namespace student {
     for (unsigned i=0; i<optimized_path.size(); i++) {
       temp_pt = {new_graph_vertices[optimized_path[i]].x, new_graph_vertices[optimized_path[i]].y,-1};
       cout << "optimized point: (x: " << temp_pt.x << " , y: "<<  temp_pt.y << " , theta: " << temp_pt.th << " ) " << endl;
+      path_points.push_back(temp_pt);
     }
 
     // Test dubins --------------------------------
