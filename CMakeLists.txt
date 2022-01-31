@@ -22,6 +22,7 @@ add_library(student SHARED
    src/collision_detect.cpp
    src/dubins/dubins.cpp
    src/vertical_cell_decomposition.cpp
+   src/plot.cpp
 )
 
 target_link_libraries(student

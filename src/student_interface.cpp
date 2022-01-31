@@ -7,19 +7,20 @@
 #include <string> 
 
 #include <cmath>
+#include "plot.hpp"
 #include "dubins.h"
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
 
-int enlarge = 600;
+int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
 
 namespace student {
 
- void loadImage(cv::Mat& img_out, const std::string& config_folder){  
-   throw std::logic_error( "STUDENT FUNCTION - LOAD IMAGE - NOT IMPLEMENTED" );
- }
+  void loadImage(cv::Mat& img_out, const std::string& config_folder){  
+    throw std::logic_error( "STUDENT FUNCTION - LOAD IMAGE - NOT IMPLEMENTED" );
+  }
 
- void genericImageListener(const cv::Mat& img_in, std::string topic, const std::string& config_folder){
+  void genericImageListener(const cv::Mat& img_in, std::string topic, const std::string& config_folder){
     throw std::logic_error( "STUDENT FUNCTION - IMAGE LISTENER - NOT CORRECTLY IMPLEMENTED" );
   }
 
@@ -27,23 +28,19 @@ namespace student {
     throw std::logic_error( "STUDENT FUNCTION - EXTRINSIC CALIB - NOT IMPLEMENTED" );   
   }
 
-  void imageUndistort(const cv::Mat& img_in, cv::Mat& img_out, 
-          const cv::Mat& cam_matrix, const cv::Mat& dist_coeffs, const std::string& config_folder){
-
+  void imageUndistort(const cv::Mat& img_in, cv::Mat& img_out, const cv::Mat& cam_matrix, const cv::Mat& dist_coeffs, const std::string& config_folder){
     throw std::logic_error( "STUDENT FUNCTION - IMAGE UNDISTORT - NOT IMPLEMENTED" );  
-
   }
 
   void findPlaneTransform(const cv::Mat& cam_matrix, const cv::Mat& rvec, 
-                        const cv::Mat& tvec, const std::vector<cv::Point3f>& object_points_plane, 
-                        const std::vector<cv::Point2f>& dest_image_points_plane, 
-                        cv::Mat& plane_transf, const std::string& config_folder){
+                          const cv::Mat& tvec, const std::vector<cv::Point3f>& object_points_plane, 
+                          const std::vector<cv::Point2f>& dest_image_points_plane, 
+                          cv::Mat& plane_transf, const std::string& config_folder){
     throw std::logic_error( "STUDENT FUNCTION - FIND PLANE TRANSFORM - NOT IMPLEMENTED" );  
   }
 
 
-  void unwarp(const cv::Mat& img_in, cv::Mat& img_out, const cv::Mat& transf, 
-            const std::string& config_folder){
+  void unwarp(const cv::Mat& img_in, cv::Mat& img_out, const cv::Mat& transf, const std::string& config_folder){
     throw std::logic_error( "STUDENT FUNCTION - UNWRAP - NOT IMPLEMENTED" );   
   }
 
@@ -73,77 +70,59 @@ namespace student {
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
 
-
-    // drawing the solution
+    //initialising the plot
     int l = 1000;        
     cv::Mat plot(l - 300,l, CV_8UC3, cv::Scalar(255,255,255));
 
+
+    //OBSTACLES PREPROCESSING
+    
     // inflating the obsticales and borders of the arena
     float inflate_value = 30;
-    
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
-
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
+    //Basem what is this exactly doing and why do we do it twice?
     inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
-    //inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
+    inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
     inflated_obstacle_list =  merge_obstacles (inflated_obstacle_list, plot);
 
     // TO DO: implement a function to merge the obstacles that are over lapping
     // TO DO: delete all the vertcices outside of the borders
 
-    // BEGINING OF RAOD-MAP
-    POINT temp_point;
 
+    //ADJUSTING THE FORMAT OF THE INPUT DATA
+    
+    //convert input boundary data into the data format we use 
     std::vector<POINT> boundary;
-    std::vector<POINT> boundary2;
-
     for (const auto &position : inflated_borders) {
       boundary.push_back({position.x,position.y});
     }
-
-    //FOR DEBUG
-    // std::cout<<"\n>>>> Border postion:"<<std::endl;
-    // for(int i = 0; i < boundary.size(); i++){
-    //  cout<< "x=" << boundary[i].x*enlarge << " y=" << boundary[i].y*enlarge << endl;
-    // }
  
+    //convert input start points data into the data format we use 
     std::vector<POINT> start_point;
-
     for (int i = 0; i < x.size(); i++) {
       start_point.push_back(POINT{x[i],y[i],theta[i]});
-    }
+    }   
     
-    //FOR DEBUG
-    // std::cout<<"\n>>>> Starting points:"<<std::endl;
-    // for(int i = 0; i < start_point.size(); i++){
-    //  cout<< "x=" << start_point[i].x << " y=" << start_point[i].y << " theta="<< start_point[i].theta << endl;
-    // }
-    
-    
-    std::vector<POINT> end_point;
+    //convert input gate position data into the data format we use
     std::vector<POINT> gate;
-
+    //end point is the center of the gate 
+    std::vector<POINT> end_point;
     for (int i = 0; i < gate_list.size(); i++) {
-      //cout << "\n>>>> Gate " << i << endl;
       for (const auto &position : gate_list[i]) {
         gate.push_back({position.x,position.y});
-        //cout<< "x=" << temp_point.x << " y=" << temp_point.y << endl;
       }
       end_point.push_back(centroid(gate));
       gate.clear();
     }
 
-    //FOR DEBUG
-    //std::cout<<"\n>>>> End points:"<<std::endl;
-    //for(int i = 0; i < end_point.size(); i++){
-    //  cout<< "x=" << end_point[i].x << " y=" << end_point[i].y << endl;
-    //}
-    
-    std::vector< std::vector<POINT> > obstacles;
-    std::vector<POINT> obstacle;
+    //the total number of vertices of all obstacles together
     int vertices_num = 0;
 
+    //convert input obstacles data into the data format we use    
+    std::vector< std::vector<POINT> > obstacles;
+    std::vector<POINT> obstacle;
     for (int i = 0; i < inflated_obstacle_list.size(); i++) {
       for (const auto &position : inflated_obstacle_list[i]) {
         obstacle.push_back(POINT{position.x,position.y,-1,i});
@@ -153,1162 +132,75 @@ namespace student {
       obstacle.clear();
     }
 
-    //FOR DEBUG
-    // std::cout<<"\n>>>> Obstacles:"<<std::endl;
-    // for(int i = 0; i < obstacles.size(); i++){
-    //  std::cout<<"\nObstacle "<< i << endl;
-    //  for(int j = 0; j < obstacles[i].size(); j++){
-    //    cout<< "x=" << obstacles[i][j].x << " y=" << obstacles[i][j].y << endl;
-    //  }
-    // }
-  
-    //sorting the vertices by their x value in increasing order
-    std::vector<POINT> sorted_vertices;
 
-    //filling the vector with the required number of placeholder points 
-    for(int curr_vertex = vertices_num - 1; curr_vertex >= 0; curr_vertex--) {
-      sorted_vertices.push_back(POINT{-1,-1,-1,-1});
-    }
-    
-    int add_to_list;
+    //ROAD-MAP CONSTRUCTION
 
-    for(int curr_vertex = vertices_num - 1; curr_vertex >= 0; curr_vertex--) {
-      for(int obj = 0; obj < obstacles.size(); obj++) {
-        for(int vertex = 0; vertex < obstacles[obj].size(); vertex++) {
-          add_to_list = 0;
-          if(obstacles[obj][vertex].x > sorted_vertices[curr_vertex].x) {
-            if( curr_vertex == vertices_num - 1 ||
-            obstacles[obj][vertex].x < sorted_vertices[curr_vertex + 1].x ||
-            obstacles[obj][vertex].x == sorted_vertices[curr_vertex + 1].x)
-            {add_to_list = 1;}
+    //sorting obstacle vertices by their x value in increasing order
+    std::vector<POINT> sorted_vertices;    
+    sorted_vertices = sort_vertices(obstacles, sorted_vertices, vertices_num); 
 
-            for(int vert = 0; vert < sorted_vertices.size(); vert ++) {
-              if (sorted_vertices[vert].x == obstacles[obj][vertex].x && sorted_vertices[vert].y == obstacles[obj][vertex].y) {
-                add_to_list = 0;
-              }
-            }
-          }
-          if(add_to_list == 1) {
-            sorted_vertices[curr_vertex].x = obstacles[obj][vertex].x;
-            sorted_vertices[curr_vertex].y = obstacles[obj][vertex].y;
-            sorted_vertices[curr_vertex].obs = obj;
-          }
-        }             
-      } 
-    }
+    //adding the first point of the obstacle to the end to close the polygon
+    obstacles = close_polygons(obstacles);
 
-
-    //FOR DEBUGGING
-    std::cout<< "vertices number: " << vertices_num << std::endl;
-    // std::cout<<"\n>>>> Sorted vertices:"<<std::endl;
-    //print out the vertices of the obstacles
-    for(int i = 0; i < sorted_vertices.size(); i++){
-        // cout<< "x=" << sorted_vertices[i].x << " y=" << sorted_vertices[i].y << endl;
-        cv::Point2f centerCircle(sorted_vertices[i].x*enlarge,sorted_vertices[i].y*enlarge);
-        cv::circle(plot, centerCircle, 2,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
-        // std::string text = std::to_string(sorted_vertices[i].obs);
-        // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-    }
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0);  
-
-    //Determining the vertical lines
+    //determining the limits of the vertical lines
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
 
-    // cout << "\nlimits " << y_limit_lower << " " << y_limit_upper << endl;
-
+    //finding the vertical lines
     std::vector< SEGMENT > open_line_segments;
-    SEGMENT curr_segment;
+    open_line_segments = find_lines(sorted_vertices, obstacles, y_limit_lower, y_limit_upper);
 
-    //add the first point of the obstacle to the end to close the polygon
-    for(int obs = 0; obs < obstacles.size(); obs++) {
-      //check if it has already been added
-      if(obstacles[obs][0].x != obstacles[obs].back().x ||
-      obstacles[obs][0].x != obstacles[obs].back().x ){
-        obstacles[obs].push_back(obstacles[obs][0]);
-      }
-    }
-    float prev_x = -1;
-
-    for(const POINT& pt : sorted_vertices){
-      prev_x = pt.x;
-      int up = 0;
-      int down = 0;
-      int break_now = 0;
-      POINT lower_obs_pt;
-      POINT upper_obs_pt;
-      POINT intersection_point;
-      SEGMENT temp_segment;
-      
-      temp_point.x = pt.x;
-      temp_point.y = y_limit_lower;
-      temp_point.obs = pt.obs;
-      curr_segment.a = temp_point;
-      lower_obs_pt = temp_point;
-    
-      temp_point.y = y_limit_upper;
-      curr_segment.b = temp_point;
-      upper_obs_pt = temp_point;
-
-      for(int obs = 0; obs < obstacles.size(); obs++) { 
-        for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
-          temp_segment.a = obstacles[obs][vertex];
-          temp_segment.b = obstacles[obs][vertex + 1];
-
-          // FOR DEBUG
-          // print the horizontal lines and the current obstacle segment being checked
-          // int output7 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // int output8 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-          // auto color_rand = cv::Scalar(output7,output8,output9);
-          // cv::line(plot, cv::Point2f(curr_segment.a.x*enlarge,curr_segment.a.y*enlarge), cv::Point2f(curr_segment.b.x*enlarge,curr_segment.b.y*enlarge), color_rand, 2);
-          // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 2);
-          // cv::imshow("Clipper", plot);
-          // cv::waitKey(0);
-          // std::cout << "current point: " << "( " << pt.x << ","<< pt.y << ")" << std::endl;
-
-          intersection_point = intersection_trial(curr_segment, temp_segment);
-
-          if(intersection_point.x != -1){ 
-            //FOR DEBUG
-            // printing the intersection points of the vertical lines with the obstacles and showing whats left from them
-            // cv::Point2f point_center2(pt.x*enlarge,pt.y*enlarge);
-            // std::string text = std::to_string(pt.obs);
-            // putText(plot, text, point_center2, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-            // cv::Point2f point_center(intersection_point.x*enlarge,intersection_point.y*enlarge);
-            // cv::circle(plot, point_center, 5,cv::Scalar( 0, 10, 125 ),2);
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0);
-            // std::cout << "temp_segment.a (" << temp_segment.a.x << " , " << temp_segment.a.y << " )" << endl;
-            // std::cout << "temp_segment.b (" << temp_segment.b.x << " , " << temp_segment.b.y << " )"<< endl;
-            // std::cout << "curr_segment.a (" << curr_segment.a.x << " , " << curr_segment.a.y << " )"<< endl;
-            // std::cout << "curr_segment.b (" << curr_segment.b.x << " , " << curr_segment.b.y << " )"<< endl;
-            // std::cout << "intersection_point (" << intersection_point.x << " , " << intersection_point.y << " )"<< endl;
-            if(obs == pt.obs) {
-              if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
-                if(intersection_point.y > pt.y) {up = 1;}
-                if(intersection_point.y < pt.y) {down = 1;}
-              }
-            }
-            else {
-              if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
-                if((up == 0) && (intersection_point.y > pt.y) && (intersection_point.y < upper_obs_pt.y)) {
-                  upper_obs_pt = intersection_point;
-                }
-                if((down == 0) && (intersection_point.y < pt.y) && (intersection_point.y > lower_obs_pt.y)) {
-                  lower_obs_pt = intersection_point;
-                }
-              }
-            }
-          }
-          if(up && down) {
-            break_now = 1;
-            break;
-          }
-        }
-        
-        if(break_now) {break;}
-      }
-
-      // FOR DEBUG
-      // printing the vertical lines
-      if(down == 0){
-          cv::line(plot, cv::Point2f(lower_obs_pt.x*enlarge,lower_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
-      }
-      if(up == 0){
-        cv::line(plot, cv::Point2f(upper_obs_pt.x*enlarge,upper_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
-      }
-      // cv::imshow("Clipper", plot);
-      // cv::waitKey(0);
-
-      temp_point = {-1,-1};
-      temp_segment = {temp_point,temp_point};
-
-      if(up && down) {
-      //temp_segment default values of -1 remain unchanged
-      }
-      else if(down) {
-        temp_segment.b = upper_obs_pt;
-      }
-      else if(up) {
-        temp_segment.a = lower_obs_pt;  
-      }
-      else {
-        temp_segment.a = lower_obs_pt;
-        temp_segment.b = upper_obs_pt;  
-      } 
-      open_line_segments.push_back(temp_segment);
-    }
-
-    // FOR DEBUG
-    // print out the open line segments
-    // std::cout << "open line segments:" << std::endl;
-    // for(int i = 0; i < open_line_segments.size(); i++){
-    //  std::cout << "seg # "<< i << " A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << std::endl; 
-    // }
-
-    //Finding cells
-    POINT curr_vertex;
-    SEGMENT next_segment;
-    SEGMENT next_next_segment;
-    POINT next_vertex;
-    POINT next_next_vertex;
-    std::vector<SEGMENT> lines_to_check;
-    std::vector<int> group;
-    std::vector< std::vector<POINT> > trapezoids;
-    std::vector<POINT> temp_points1;
-    std::vector<POINT> temp_points2;
-    SEGMENT temp_segment;
+    //finding basic cells
     std::vector< std::vector<POINT> > cells;
-    int break_now;
-    std::vector<int> done;
-    bool extra_search = true; // to allow for adding extra trapazoids when next two segements have same x
+    cells = find_cells(open_line_segments, sorted_vertices, obstacles);
 
-    for(int i = 0; i < open_line_segments.size(); i++) {
-      curr_segment = open_line_segments[i];
-      curr_vertex = sorted_vertices[i];
-      break_now = 0;
-      done = {0,0,1};
+    //merging overlaping polygons
+    cells = merge_polygons(cells);
 
-      // a is lower limit , b is upper limit
+    //adding cells from boundary lines to closest obstacle
+    cells = boundary_cells(boundary, cells, sorted_vertices, y_limit_lower, y_limit_upper);
 
-      // group 0 -> not blocked from the bottom
-      // group 1 -> not blocked from the top
-      // group 2 -> completely blocked
-
-      // if lower limit is blocked -> don't look down
-      if(curr_segment.a.x == -1) {done[0] = 1;}
-      // if upper limit is blocked -> don't look up :)
-      if(curr_segment.b.x == -1) {done[1] = 1;}
-      // if upper and lower limits are blocked -> figure out something else
-      if((curr_segment.a.x == -1) && (curr_segment.b.x == -1)) {done[2] = 0;}
-      int counter = 0;
-      for(int j = i+1; j < open_line_segments.size(); j++) {
-        counter +=1;
-        // std::cout << "the done status for segment " << i << " is: " << done[0] << done[1] << done[2] << " iteration:" << counter << std::endl;
-        lines_to_check.clear();
-        group.clear();
-        trapezoids.clear();
-        bool double_check = false;
-        bool next_two_seg_same_x = false;
-        
-        next_segment = open_line_segments[j];
-        next_vertex = sorted_vertices[j];
-        if( j != open_line_segments.size()-1 && extra_search){
-          next_next_segment = open_line_segments[j+1];
-          next_next_vertex = sorted_vertices[j+1];
-          next_two_seg_same_x = (next_vertex.x == next_next_vertex.x);
-        }
-        // check to see if the next segemnt is completely free from both sides
-        double_check = next_segment.a.x != -1 && next_segment.b.x != -1;
-        // if not blocked from the bottom
-        if(done[0] == 0) {
-          // cout << "--------cur seg is not blocked from bottom----------" << endl;
-          // std::cout << "test -> done[0]  == 0 [not blocked from the bottom" << std::endl;
-          // and the next vertex is free from both sides
-          if(double_check) {
-            // cout << "--next seg is free" << endl;         
-            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-
-            // FOR DEBUG
-            // print debug temp points
-            // std::cout << "temp_points1: (" << temp_points1[0].x << " , " << temp_points1[0].y << ") , (" << temp_points1[1].x << " , " << temp_points1[1].y << ")" << std::endl;
-            // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // auto color_rand = cv::Scalar(output4,output5,output6);
-            // cv::Point2f point_center(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge);
-            // cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8);
-            // cv::Point2f point_center11(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge);
-            // cv::circle(plot, point_center11, 5,color_rand,cv::FILLED,cv::LINE_8);  
-            // cv::line(plot, cv::Point2f(temp_points1[0].x*enlarge,temp_points1[0].y*enlarge), cv::Point2f(temp_points1[1].x*enlarge,temp_points1[1].y*enlarge), color_rand, 2);
-            // cv::line(plot, cv::Point2f(temp_points2[0].x*enlarge,temp_points2[0].y*enlarge), cv::Point2f(temp_points2[1].x*enlarge,temp_points2[1].y*enlarge), color_rand, 2);
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0); 
-            
-            //.a remains the same        
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-            trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
-            trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
-          }
-          // if next segment is not blocked from the bottom
-          else if(next_segment.a.x != -1) {
-            // cout << "--next seg is not blocked from bottom" << endl;       
-            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-            // trapezoids
-            temp_points1.clear();
-            trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
-            if(next_two_seg_same_x && (next_next_segment.b.x != -1) && (next_next_segment.a.x == -1) && extra_search){
-              // cout << "--next next seg is not blocked from top" << endl;
-              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              temp_points1.clear();
-              trapezoids.push_back({curr_segment.a,next_next_vertex,next_next_segment.b,curr_vertex});              
-            }
-          }
-          //if the next segment is not blocked from the top
-          else if(next_segment.b.x != -1) {
-            // cout << "--next seg is not blocked from top" << endl;       
-            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-            trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
-            if(next_two_seg_same_x && (next_next_segment.a.x != -1) && (next_next_segment.b.x == -1)  && extra_search){
-              // cout << "--next next seg is not blocked from bottom" << endl;
-              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              trapezoids.push_back({curr_segment.a,next_next_segment.a,next_next_vertex,curr_vertex});              
-            }
-          }
-          else {
-            temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-            temp_segment.b = next_vertex;
-            lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-            trapezoids.push_back({curr_segment.a,next_vertex,curr_vertex});
-          }
-        }
-        // not blocked from the bottom
-        if(done[1] == 0) {
-          // cout << "--------cur seg is not blocked from top----------" << endl;
-          // if next segment is free from both sides
-          if(double_check) {
-            // cout << "--next seg is free" << endl;        
-            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(1);         
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(1);
-            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
-            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
-          }
-          // if next segement not blocked from the bottom
-          else if(next_segment.a.x != -1) {
-            // cout << "--next seg is not blocked from bottom" << endl;       
-            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(1);
-            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
-            if(next_two_seg_same_x && (next_next_segment.b.x != -1)  && (next_next_segment.a.x == -1) && extra_search){
-              // cout << "--next next seg is not blocked from top" << endl;
-              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              trapezoids.push_back({curr_vertex,next_next_vertex,next_next_segment.b,curr_segment.b});              
-            }
-          }
-          // if next segment is not blocked from the top
-          else if(next_segment.b.x != -1) {
-            // cout << "--next seg is not blocked from top" << endl;         
-            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(1);
-            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
-
-            if(next_two_seg_same_x && (next_next_segment.a.x != -1)  && (next_next_segment.b.x == -1)  && extra_search){
-              // cout << "--next next seg is not blocked from bottom" << endl;
-              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              trapezoids.push_back({curr_vertex,next_next_segment.a,next_next_vertex,curr_segment.b});              
-            }
-          }
-          else {
-            temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-            temp_segment.b = next_vertex;
-            lines_to_check.push_back(temp_segment);
-            group.push_back(1);
-            trapezoids.push_back({curr_vertex,next_vertex,curr_segment.b});
-          }
-        }
-
-        //blocked from both
-        if(done[2] == 0) {
-          // if next segement free from both sides
-          if(double_check) {       
-            temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(2);         
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(2);
-            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex});
-            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b});
-          }
-          else if(next_segment.a.x != -1) {        
-            temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid({next_segment.a,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(2);
-            trapezoids.push_back({curr_vertex,next_segment.a,next_vertex});
-          }
-          else if(next_segment.b.x != -1) {       
-            temp_segment.a = curr_vertex; 
-            temp_segment.b = centroid({next_segment.b,next_vertex}); 
-            lines_to_check.push_back(temp_segment);
-            group.push_back(2);
-
-            temp_points1.clear();
-            trapezoids.push_back({curr_vertex,next_vertex,next_segment.b});
-          }
-          else {
-            temp_segment.a = curr_vertex; 
-            temp_segment.b = next_vertex;
-            lines_to_check.push_back({temp_segment});
-            group.push_back(2);
-            trapezoids.push_back({curr_vertex,next_vertex});
-          }
-        }
-        // FOR DEBUG
-        // print lines_to_check
-        // for(unsigned j=0; j<lines_to_check.size(); j++){
-        //   int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   auto color_rand = cv::Scalar(output4,output5,output6);
-        //   cv::line(plot, cv::Point2f(lines_to_check[j].a.x*enlarge,lines_to_check[j].a.y*enlarge), cv::Point2f(lines_to_check[j].b.x*enlarge,lines_to_check[j].b.y*enlarge), color_rand, 1);           
-        //   cv::imshow("Clipper", plot);
-        //   cv::waitKey(0); 
-        // } 
-        // print for trapezoids
-        // for (unsigned j=0; j<trapezoids.size(); j++) {
-        //     // std::cout << "test test" << std::endl;
-        //     cv::line(plot, cv::Point2f(trapezoids[j][0].x*enlarge,trapezoids[j][0].y*enlarge), cv::Point2f(trapezoids[j][1].x*enlarge,trapezoids[j][1].y*enlarge), cv::Scalar(60,110,23), 2);
-        //     cv::line(plot, cv::Point2f(trapezoids[j][1].x*enlarge,trapezoids[j][1].y*enlarge), cv::Point2f(trapezoids[j][2].x*enlarge,trapezoids[j][2].y*enlarge), cv::Scalar(60,110,23), 2);
-        //     cv::line(plot, cv::Point2f(trapezoids[j][2].x*enlarge,trapezoids[j][2].y*enlarge), cv::Point2f(trapezoids[j][0].x*enlarge,trapezoids[j][0].y*enlarge), cv::Scalar(60,110,23), 2);
-        // }
-        // cv::imshow("Clipper", plot);
-        // cv::waitKey(0);
-
-        std::vector<int> temp_to_remove;
-        for(int line = 0; line < lines_to_check.size(); line++) {  
-          // for debugging
-          // reset_obs_plot(plot,obstacles);
-          int no_intersection[3] = {1, 1, 1};           
-          for(int obs = 0; obs < obstacles.size(); obs++) {              
-            for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
-              temp_segment.a = obstacles[obs][vertex];
-              temp_segment.b = obstacles[obs][vertex+1];          
-              temp_point = intersection_trial(lines_to_check[line], temp_segment);
-
-              // FOR DEBUG
-              // print the intersection prosedure
-              // std::cout << "-- (before recall) intersection_point: " << "(" << temp_point.x*enlarge << " , " << temp_point.y*enlarge << ")" << std::endl;
-              // temp_point = segment_intersection(lines_to_check[line], temp_segment,true);
-              // std::cout << "-- intersect data after retest --" << std::endl;
-              // bool _check = intersect(temp_segment.a,temp_segment.b,lines_to_check[line].a,lines_to_check[line].b,true);
-              // std::cout << "-- intersect double check: " << _check << std::endl;
-              // std::cout << "-- intersection_point: " << "(" << temp_point.x*enlarge << " , " << temp_point.y*enlarge << ")" << std::endl;
-              // std::cout << "-- obstacle segment-p1: " << "(" << temp_segment.a.x*enlarge << " , " << temp_segment.a.y*enlarge << ")" << std::endl;
-              // std::cout << "-- obstacle segment-p2: " << "(" << temp_segment.b.x*enlarge << " , " << temp_segment.b.y*enlarge << ")" << std::endl;
-              // std::cout << "-- line segment-p1: " << "(" << lines_to_check[line].a.x*enlarge << " , " << lines_to_check[line].a.y*enlarge << ")" << std::endl;
-              // std::cout << "-- line segment-p2: " << "(" << lines_to_check[line].b.x*enlarge << " , " << lines_to_check[line].b.y*enlarge << ")" << std::endl;
-              // std::cout<< "-------------------------" << std::endl;
-              // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // auto color_rand = cv::Scalar(output4,output5,output6);
-              // cv::Point2f point_center(temp_point.x*enlarge,temp_point.y*enlarge);
-              // cv::circle(plot, point_center, 5,color_rand,2);//cv::Scalar( 0, 10, 125 ),2);
-              // cv::line(plot, cv::Point2f(lines_to_check[line].a.x*enlarge,lines_to_check[line].a.y*enlarge), cv::Point2f(lines_to_check[line].b.x*enlarge,lines_to_check[line].b.y*enlarge), color_rand, 2);           
-              // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 2);           
-              // cv::imshow("Clipper", plot);
-              // cv::waitKey(0);
-              
-              if(temp_point.x != -1) {
-                no_intersection[group[line]] = 0;
-                int found = 0;
-                for(int idx = 0; idx < temp_to_remove.size(); idx++) {
-                  if(line == temp_to_remove[idx]) {
-                    found = 1;
-                    break;
-                  }
-                }
-                if(found == 0) {
-                  temp_to_remove.push_back(line);
-                } 
-              }
-            // std::cout << "-- intersection_point: " << "(" << temp_point.x << " , " << temp_point.y << ")" << std::endl;
-            }      
-          }
-          
-          // std::cout << "-- no_intersection stat: " << no_intersection[0] << " , "  << no_intersection[1] << " , " << no_intersection[2] << std::endl;
-          if(no_intersection[group[line]] == 1) {done[group[line]] = 1;}
-        }
-
-        for(int line = 0; line < lines_to_check.size(); line++) {
-          int found = 0;
-          for(int idx = 0; idx < temp_to_remove.size(); idx++) {
-            if(line == temp_to_remove[idx]) {
-              found = 1;
-              break;
-            }
-          }
-          if(found == 0) {
-            cells.push_back(trapezoids[line]);
-
-            // FOR DEBUG
-            // print the cells one by one
-            // int output4 = 0;
-            // int output5 = 0;
-            // int output6 = 0;
-            // output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // auto color_rand = cv::Scalar(output4,output5,output6);
-            // for(unsigned j=1; j<cells[cells.size()-1].size(); j++){
-            //   cv::Point2f point_center(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge);
-            //   cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8); 
-            //   cv::line(plot, cv::Point2f(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge), cv::Point2f(cells[cells.size()-1][j].x*enlarge,cells[cells.size()-1][j].y*enlarge), color_rand, 2);
-            //   if (j == cells[cells.size()-1].size() -1){
-            //     cv::line(plot, cv::Point2f(cells[cells.size()-1][j].x*enlarge,cells[cells.size()-1][j].y*enlarge), cv::Point2f(cells[cells.size()-1][0].x*enlarge,cells[cells.size()-1][0].y*enlarge), color_rand, 2);
-            //   }
-            // }
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0);  
-          } 
-        }
-
-        if(done[0] && done[1] && done[2]){ break;}
-      }
-    }
-
-    //Merge overlapping polygons
-    std::vector< std::vector<POINT> > quad_cells; 
-    std::vector< std::vector<POINT> > tri_cells;
-    std::vector< std::vector<POINT> > other_cells;
-
-    for(int cell = 0; cell < cells.size(); cell++) {
-      if(cells[cell].size() > 3) {quad_cells.push_back(cells[cell]);}
-      else if(cells[cell].size() == 3) {tri_cells.push_back(cells[cell]);}
-      else {other_cells.push_back(cells[cell]);}
-    }
-
-    std::vector<int> quads_to_remove;
-    std::vector< std::vector<POINT> > quads_to_add;
-    std::vector<POINT> temp1;
-    std::vector<POINT> temp2;
-    std::vector<POINT> new_quad;
-    int area1, area2, area3;
-
-    for(int cell1 = 0; cell1 < quad_cells.size(); cell1++) {
-      for(int cell2 = 0; cell2 < quad_cells.size(); cell2++) {
-        if(cell1 != cell2) {
-          if(quad_cells[cell1][0].x == quad_cells[cell2][0].x && quad_cells[cell1][1].x == quad_cells[cell2][1].x) {
-          
-            temp1 = quad_cells[cell1];
-            // add the first point to the back
-            temp1.push_back(quad_cells[cell1][0]);
-            temp2 = quad_cells[cell2];
-            temp2.push_back(quad_cells[cell2][0]);
-            area1 = polygon_area(temp1, 4);
-            area2 = polygon_area(temp2, 4);
-
-            temp_point.x = temp1[0].x;
-            temp_point.y = min(temp1[0].y, temp2[0].y);
-            new_quad.push_back(temp_point);
-            temp_point.x = temp1[1].x;
-            temp_point.y = min(temp1[1].y, temp2[1].y);
-            new_quad.push_back(temp_point);
-            temp_point.x = temp1[1].x;
-            temp_point.y = max(temp1[2].y, temp2[2].y);
-            new_quad.push_back(temp_point);
-            temp_point.x = temp1[0].x;
-            temp_point.y = max(temp1[3].y, temp2[3].y);
-            new_quad.push_back(temp_point);
-            temp_point.x = temp1[0].x;
-            temp_point.y = min(temp1[0].y, temp2[0].y);
-            new_quad.push_back(temp_point);
-            area3 = polygon_area(new_quad, 4);
-
-            if(area1 + area2 >= area3) {
-              quads_to_remove.push_back(cell1);
-              quads_to_remove.push_back(cell2);
-              quads_to_add.push_back(new_quad);
-            }
-            
-            temp1.clear();
-            temp2.clear();
-            new_quad.clear();
-          }
-        }
-      } 
-    }
-    
-    sort(quads_to_remove.begin(), quads_to_remove.end());
-
-    // for (int i = 0 ; i < quads_to_remove.size();i++){
-    //   std::cout << "quads to remove: " << quads_to_remove[i] << std::endl;
-    // }
-
-
-    quads_to_remove.erase(unique(quads_to_remove.begin(), quads_to_remove.end()), quads_to_remove.end());
-
-    for(int quad = 0; quad < quads_to_remove.size(); quad ++) {
-      quad_cells.erase(quad_cells.begin() + quads_to_remove[quad] - quad); //-quad because after deletion the indices shift
-    }
-
-    for(int quad = 0; quad < quads_to_add.size(); quad ++) {
-      quad_cells.push_back(quads_to_add[quad]);
-    }     
-
-    quads_to_remove.clear();
-    for(int quad1 = 0; quad1 < quad_cells.size(); quad1 ++) {
-      for(int quad2 = quad1 + 1; quad2 < quad_cells.size(); quad2 ++) {
-        int duplicate = 1;
-        for(int point = 0; point < quad_cells[quad1].size(); point ++) {
-          if((quad_cells[quad1][point].x != quad_cells[quad2][point].x) || (quad_cells[quad1][point].y != quad_cells[quad2][point].y)) {
-            duplicate = 0;
-            break;
-          }
-        }
-        if (duplicate) {quads_to_remove.push_back(quad2);}
-      }
-    } 
-
-    sort(quads_to_remove.begin(), quads_to_remove.end());
-    quads_to_remove.erase(unique(quads_to_remove.begin(), quads_to_remove.end()), quads_to_remove.end());
- 
-    // for (int i = 0 ; i < quads_to_remove.size();i++){
-    //   std::cout << "quads to remove: " << quads_to_remove[i] << std::endl;
-    // }
-
-    for(int quad = 0; quad < quads_to_remove.size(); quad ++) {
-      quad_cells.erase(quad_cells.begin() + quads_to_remove[quad] - quad); //-quad because after deletion the indices shift
-    } 
-
-    //One more pass to remove extra quads generated because of cross - segments
-
-    quads_to_remove.clear();
-    for(int quad1 = 0; quad1 < quad_cells.size(); quad1 ++) {
-      for(int quad2 = 0; quad2 < quad_cells.size(); quad2 ++) {
-        if(quad1 != quad2 && quad_cells[quad1][0].x == quad_cells[quad2][0].x && quad_cells[quad1][1].x == quad_cells[quad2][1].x) { 
-          if((quad_cells[quad1][0].y <= quad_cells[quad2][0].y) && (quad_cells[quad1][1].y <= quad_cells[quad2][1].y)
-              && (quad_cells[quad1][2].y >= quad_cells[quad2][2].y) && (quad_cells[quad1][3].y >= quad_cells[quad2][3].y)) {      
-              quads_to_remove.push_back(quad2);
-          }
-        } 
-      }
-    } 
-
-    sort(quads_to_remove.begin(), quads_to_remove.end());
-    quads_to_remove.erase(unique(quads_to_remove.begin(), quads_to_remove.end()), quads_to_remove.end());
- 
-    for(int quad = 0; quad < quads_to_remove.size(); quad ++) {
-      quad_cells.erase(quad_cells.begin() + quads_to_remove[quad] - quad); //-quad because after deletion the indices shift
-    } 
-
-    //Add boundary lines
-    if(boundary[0].x != sorted_vertices[0].x) {
-      new_quad.clear();
-
-      new_quad.push_back(boundary[0]);
-
-      temp_point.x = sorted_vertices[0].x;
-      temp_point.y = y_limit_lower;
-      new_quad.push_back(temp_point);   
-
-      temp_point.x = sorted_vertices[0].x;
-      temp_point.y = y_limit_upper;
-      new_quad.push_back(temp_point); 
-
-      new_quad.push_back(boundary[3]);
-
-      quad_cells.push_back(new_quad);
-    }
-
-    if(boundary[1].x != sorted_vertices[sorted_vertices.size()-1].x) {
-      new_quad.clear();
-
-      temp_point.x = sorted_vertices[sorted_vertices.size()-1].x;
-      temp_point.y = y_limit_lower;
-      new_quad.push_back(temp_point); 
-
-      new_quad.push_back(boundary[1]);
-
-      new_quad.push_back(boundary[2]);
-
-      temp_point.x = sorted_vertices[sorted_vertices.size()-1].x;
-      temp_point.y = y_limit_upper;
-      new_quad.push_back(temp_point);
-
-      quad_cells.push_back(new_quad);
-    }
-
-    //Get the graph
-    std::vector<int> same_boundary;
-    std::vector<POINT> graph_vertices;
+    //getting the graph edges & vertices
     std::vector<POINT> graph_edges;
-    POINT centroid_vertex;
-    POINT curr_centroid_vertex;
-    POINT temp_edge_middle;
-    int inside;
-    int place; 
-    int place1;
-    int place2;
-    int use; 
-    int n;
-
-    // for each quad cell find the cells that have the same boundary --> find neigbour cells
-    for(int cell1 = 0; cell1 < quad_cells.size(); cell1 ++) {
-      same_boundary.clear();
-      //compare to the rest of the cells if it is not the same cell
-      for(int cell2 = 0; cell2 < quad_cells.size(); cell2 ++) { 
-        if(cell1 != cell2) {
-          if((quad_cells[cell1][1].x == quad_cells[cell2][0].x) && 
-            ((quad_cells[cell1][2].y == quad_cells[cell2][0].y || quad_cells[cell1][2].y == quad_cells[cell2][3].y) ||
-            (quad_cells[cell1][1].y == quad_cells[cell2][0].y || quad_cells[cell1][1].y == quad_cells[cell2][3].y))) {
-            same_boundary.push_back(cell2);
-          }
-        }
-      }
-
-      temp_points1.clear();
-      for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(quad_cells[cell1][pt]);}
-      centroid_vertex = centroid(temp_points1);
-      inside = 0;
-      for(int vertex = 0; vertex < graph_vertices.size(); vertex++) {
-        if(centroid_vertex.x == graph_vertices[vertex].x && centroid_vertex.y == graph_vertices[vertex].y) { 
-          inside = 1;
-          place = vertex;
-          break;
-        }
-      }
-      if(inside == 0) {
-        graph_vertices.push_back(centroid_vertex); 
-        place = -1;
-      }
-
-      if(same_boundary.size() == 1) {
-        temp_points1.clear();
-        temp_points1.push_back(quad_cells[cell1][1]);
-        temp_points1.push_back(quad_cells[cell1][2]);
-        temp_edge_middle = centroid(temp_points1);
-        graph_vertices.push_back(temp_edge_middle);
-        n = graph_vertices.size() - 1;
-      
-        if(place != -1) {
-          temp_point.x = place;
-          temp_point.y = n;
-          graph_edges.push_back(temp_point);
-        }
-        else {
-          temp_point.x = n-1;
-          temp_point.y = n;
-          graph_edges.push_back(temp_point);
-        }
-
-        temp_points1.clear();
-        for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(quad_cells[same_boundary[0]][pt]);}
-        curr_centroid_vertex = centroid(temp_points1);
-        inside = 0;
-        for(int vertex = 0; vertex < graph_vertices.size(); vertex++) {
-          if(curr_centroid_vertex.x == graph_vertices[vertex].x && curr_centroid_vertex.y == graph_vertices[vertex].y) { 
-            inside = 1;
-            place2 = vertex;
-            break;
-          }
-        }
-        if(inside == 0) { 
-          place2 = -1;
-        }
-        if(place2 == -1) {
-          graph_vertices.push_back(curr_centroid_vertex);
-          temp_point.x = n;
-          temp_point.y = n + 1;
-          graph_edges.push_back(temp_point);
-        }
-        else {
-          temp_point.x = n;
-          temp_point.y = place2;
-          graph_edges.push_back(temp_point);
-        }
-      }
-
-      else if(same_boundary.size() > 1) {
-        n = graph_vertices.size() - 1;
-        if(place != -1) { use = place; }
-        else { use = n; }
-        for(int i = 0; i < same_boundary.size(); i ++){
-          temp_points1.clear();
-          for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(quad_cells[same_boundary[i]][pt]);}
-          curr_centroid_vertex = centroid(temp_points1);
-          temp_points1.clear();
-          temp_points1.push_back(quad_cells[same_boundary[i]][0]);
-          temp_points1.push_back(quad_cells[same_boundary[i]][3]);
-          temp_edge_middle = centroid(temp_points1);
-          graph_vertices.push_back(temp_edge_middle);
-          place1 = graph_vertices.size() - 1;
-          inside = 0;
-          for(int vertex = 0; vertex < graph_vertices.size(); vertex++) {
-            if(curr_centroid_vertex.x == graph_vertices[vertex].x && curr_centroid_vertex.y == graph_vertices[vertex].y) { 
-              inside = 1;
-              place2 = vertex;
-            }
-          }
-          if(inside == 0) {
-            graph_vertices.push_back(curr_centroid_vertex);
-            place2 = graph_vertices.size() - 1;
-          }
-          temp_point.x = use;
-          temp_point.y = place1;
-          graph_edges.push_back(temp_point);
-          temp_point.x = place1;
-          temp_point.y = place2;
-          graph_edges.push_back(temp_point);
-        } 
-      }
-    }
-
-    //Source
-    int min_ind = -1; 
-    float min = INFINITY;
-    float dist;
-    int m;
-
-    for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      temp_segment.a = start_point[0]; //TODO: change for more than one robot
-      temp_segment.b = graph_vertices[vertex];
-
-      // FOR DEBUG
-      // printing the points that are measured to the start point
-      // int output10 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // int output11 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // int output12 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // auto color_rand = cv::Scalar(output10,output11,output12);
-      // cv::Point2f point_center22(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge);
-      // cv::circle(plot, point_center22, 2,color_rand,cv::FILLED,cv::LINE_8);
-      // cv::Point2f point_center222(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge);
-      // cv::circle(plot, point_center222, 2,color_rand,cv::FILLED,cv::LINE_8);
-      // cv::imshow("Clipper", plot);
-      // cv::waitKey(0);
-
-      // find the closest vertex in the graph to the start point
-      if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], start_point[0]); //TODO: change for more than one robot
-        // std::cout << "current distance: " << dist << "minimum distance: " << min << std::endl;
-        if(dist < min) {
-          min = dist;
-          min_ind = vertex;
-          // std::cout << "distance: " << dist << " closest vertex: " << vertex << std::endl;
-        } 
-      }
-    }
-
-    if(min_ind == -1){
-      std::cout << "the start point is unreachable" << std::endl;
-      return false;
-    }
-
-    graph_vertices.push_back(start_point[0]); //TODO: change for more than one robot
-    m = graph_vertices.size()-1;
-    temp_point.x = min_ind;
-    temp_point.y = m;
-    graph_edges.push_back(temp_point);
-
-    // FOR DEBUG
-    // std::cout << "the start point: (" << (temp_point.x*enlarge) << " , " << temp_point.y*enlarge << ")" << std::endl;
-    // cv::Point2f point_center222(temp_point.x*enlarge,temp_point.y*enlarge);
-    // cv::circle(plot, point_center222, 10,cv::Scalar( 40, 30, 125 ) ,cv::FILLED,cv::LINE_8);
-    // cv::imshow("Clipper", plot);
-    // cv::waitKey(0);
-
-    // destination
-    min_ind = -1; 
-    min = INFINITY;
-
-    for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      temp_segment.a = end_point[0]; //TODO: change for more than one robot
-      temp_segment.b = graph_vertices[vertex];
-      if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], end_point[0]); //TODO: change for more than one robot
-        if(dist < min) {
-          min = dist;
-          min_ind = vertex;
-        } 
-      }
-    }
-
-    if(min_ind == -1){
-      std::cout << "the end point is unreachable" << std::endl;
-      return false;
-    }
-
-    graph_vertices.push_back(end_point[0]); //TODO: change for more than one robot
-    m = graph_vertices.size()-1;
-    temp_point.x = min_ind;
-    temp_point.y = m;
-    graph_edges.push_back(temp_point);
-
-    std::vector< std::vector<int> > graph;
-
-    for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      std::vector<int> empty;
-      graph.push_back(empty);
-      for (POINT &edge : graph_edges){
-        if(edge.x == vertex){
-          graph[vertex].push_back(edge.y);
-        }
-        else if(edge.y == vertex){
-          graph[vertex].push_back(edge.x);
-        }
-      }
-    }
+    std::vector<POINT> graph_vertices;
+    tie(graph_edges, graph_vertices) = get_graph(cells);
     
+    //adding the start and end point for each robot into the graph
+    tie(graph_edges, graph_vertices) = add_start_end(graph_vertices, graph_edges, start_point, end_point, obstacles);
+
+    //constructing the graph
+    std::vector< std::vector<int> > graph;
+    graph = graph_construction(graph_vertices, graph_edges);
+    
+    //finding a path using breadth first search
     std::vector<int> my_path;
     my_path = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
 
-    // for path optimization
+    //separating only the graph vertices which belong to the path for optimization purposes
     std::vector<POINT> new_graph_vertices;
     for(int i = 0 ; i< my_path.size();i++){
       new_graph_vertices.push_back({graph_vertices[my_path[i]].x,graph_vertices[my_path[i]].y});
     }
-    // std::cout << "my_path size: " << my_path.size() << " new graph size: " << new_graph_vertices.size() << endl ;
 
-    SEGMENT temp_path;
-    SEGMENT temp_obs;
+    //optimizing the graph
     std::vector< std::vector<int> >  optimized_graph;
-    POINT inter_result;
-    for(int vertex = 0; vertex < new_graph_vertices.size();vertex++){
-      std::vector<int> empty;
-      optimized_graph.push_back(empty);
-      for(int vertex_2 = 0 ;vertex_2<new_graph_vertices.size();vertex_2++){
-        bool break_off = false;
-        if(vertex_2!=vertex ){
-          temp_path.a = {new_graph_vertices[vertex].x,new_graph_vertices[vertex].y};
-          temp_path.b = {new_graph_vertices[vertex_2].x,new_graph_vertices[vertex_2].y};
-          for(int obs = 0 ; obs< obstacles.size();obs++){
-            for(int pt = 0 ; pt< obstacles[obs].size()-1;pt++){
-              temp_obs.a = {obstacles[obs][pt].x,obstacles[obs][pt].y};
-              temp_obs.b = {obstacles[obs][pt+1].x,obstacles[obs][pt+1].y};
-              inter_result = intersection_trial(temp_obs,temp_path);
-              if(inter_result.x !=-1){
-                break_off = true;
-                break;
-              }
-            }
-            if(break_off){
-              break;
-            }
-          }
-          if(break_off){
-            continue;
-          }
-          // FOR DEBUG
-          // std::cout << "vertex1: " << vertex << " vertex2: " << vertex_2 << endl;
-          // std::cout << "temp obs: ( " << temp_obs.a.x << " , " << temp_obs.a.y << " ) ( " << temp_obs.b.x <<" ," << temp_obs.b.y << " )"<< endl;
-          // std::cout << "temp obs: ( " << temp_path.a.x << " , " << temp_path.a.y << " ) ( " << temp_path.b.x <<" ," << temp_path.b.y << " )"<< endl;
+    optimized_graph = optimize_graph(my_path, new_graph_vertices, obstacles);
 
-          optimized_graph[vertex].insert(optimized_graph[vertex].begin(),vertex_2);
-        }
-      }
-      // std::cout << "-------------" << endl;
-    }
-    // cout << "size of optimized graph: " << optimized_graph.size();
-
+    //calculating the optimized path using breadth first search
     std::vector<int> optimized_path;
     optimized_path = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
 
-    cout << endl;
-    cout <<"GRAPH VERTICES: "<< endl; 
-    for(int i = 0; i < graph_vertices.size(); i++){
-      cout << "(" << graph_vertices[i].x << "," << graph_vertices[i].y;
-      if(i == graph_vertices.size() - 1) { cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"NEW GRAPH VERTICES: "<< endl; 
-    for(int i = 0; i < new_graph_vertices.size(); i++){
-      cout << "(" << new_graph_vertices[i].x << "," << new_graph_vertices[i].y;
-      if(i == new_graph_vertices.size() - 1) { cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"GRAPH: "<< endl;
-    for(int j = 0; j < graph.size(); j++){
-      cout << "(";
-      for(int k = 0; k < graph[j].size(); k++) {  
-        cout << graph[j][k];
-        if(k != (graph[j].size() - 1)) {cout << ", ";}
-      }
-      if(j == (graph.size() - 1)) {cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"OPTIMIZED GRAPH: "<< endl;
-    for(int j = 0; j < optimized_graph.size(); j++){
-      cout << "(";
-      for(int k = 0; k < optimized_graph[j].size(); k++) {  
-        cout << optimized_graph[j][k];
-        if(k != (optimized_graph[j].size() - 1)) {cout << ", ";}
-      }
-      if(j == (optimized_graph.size() - 1)) {cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"PATH: "<< endl; 
-    for(int i = 0; i < my_path.size(); i++){
-      cout << my_path[i];
-      if(i != my_path.size() - 1) { cout << ", "; }
-    }
-    cout << endl;
-
-    cout <<"OPTIMIZED PATH: "<< endl; 
-    for(int i = 0; i < optimized_path.size(); i++){
-      cout << optimized_path[i];
-      if(i != optimized_path.size() - 1) { cout << ", "; }
-    }
-    cout << endl;    
-
-    for (int node = 0; node < my_path.size(); node ++){
-      path[0].points.emplace_back(0, graph_vertices[my_path[node]].x, graph_vertices[my_path[node]].y, 0, 0);
-    }
-
-    // FOR DEBUG
-    // drawing the cell decomposition
-    std::vector< std::vector<POINT> > AB;
-    AB.reserve( quad_cells.size() + tri_cells.size() ); // preallocate memory
-    AB.insert( AB.end(), quad_cells.begin(), quad_cells.end() );
-    AB.insert( AB.end(), tri_cells.begin(), tri_cells.end() );
-    std::vector< std::vector<POINT> > ABC;
-    if(true){
-    ABC.reserve( quad_cells.size() );
-    ABC.insert( ABC.end(), quad_cells.begin(), quad_cells.end() );
-    }
-    else{
-    ABC.reserve( AB.size() + other_cells.size() ); // preallocate memory
-    ABC.insert( ABC.end(), AB.begin(), AB.end() );
-    ABC.insert( ABC.end(), other_cells.begin(), other_cells.end() );
-    }
-    // printing the cells
-    for (unsigned i=0; i<ABC.size(); i++) {
-      int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
-      int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
-      int output3 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
-      auto color_rand = cv::Scalar(output1,output2,output3);
-      for(unsigned j=1; j<ABC[i].size(); j++){
-        cv::Point2f point_center(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge);
-        // std::cout << ABC[i][j].x << ' ' << ABC[i][j].y << std::endl;
-        cv::circle(plot, point_center, 1,cv::Scalar( 40, 30, 125 ),cv::FILLED,cv::LINE_8);
-        cv::line(plot, cv::Point2f(ABC[i][j-1].x*enlarge,ABC[i][j-1].y*enlarge), cv::Point2f(ABC[i][j].x*enlarge,ABC[i][j].y*enlarge), color_rand, 2);
-        if (j == cells[cells.size()-1].size() -1){
-          cv::line(plot, cv::Point2f(ABC[i][j].x*enlarge,ABC[i][j].y*enlarge), cv::Point2f(ABC[i][0].x*enlarge,ABC[i][0].y*enlarge), color_rand, 2);
-        }
-      }
-      
-    }
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0);
-    //drawing the points
-    for (unsigned i=0; i<graph_vertices.size(); i++) {
-      int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-      auto color_rand = cv::Scalar(output7,output8,output9);
-      cv::Point2f centerCircle(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge);
-      cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
-      // std::string text = std::to_string(i);
-      // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
-    }
-    // printing graph edges
-    // for (unsigned i=0; i<graph_edges.size(); i++) {
-    //   int output7 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   int output8 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   int output9 = 0 + (rand() % static_cast<int>(100 - 0 + 1));
-    //   std::cout << "graph edge: #" << i << " ( " << (graph_edges[i].x*enlarge) << " , " << (graph_edges[i].y*enlarge) << " )" <<endl;
-    //   auto color_rand = cv::Scalar(output7,output8,output9);
-    //   cv::Point2f centerCircle(graph_edges[i].x*enlarge,graph_edges[i].y*enlarge);
-    //   cv::circle(plot, centerCircle, 2,cv::Scalar( 0, 0, 255 ),cv::FILLED,cv::LINE_8);
-    //   std::string text = std::to_string(i);
-    //   putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 1,  color_rand, 2);
-    //       cv::imshow("Clipper", plot);
-    // cv::waitKey(0);   
-    // }
-
-    //draw start and end point
-    cv::Point2f centerCircle11(start_point[0].x*enlarge,start_point[0].y*enlarge);
-    cv::circle(plot, centerCircle11, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
-    std::string text1 = "start_point";
-    putText(plot, text1, centerCircle11, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-    cv::Point2f centerCircle111(end_point[0].x*enlarge,end_point[0].y*enlarge);
-    cv::circle(plot, centerCircle111, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
-    std::string text2 = "end_point";
-    putText(plot, text2, centerCircle111, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-
-    //drawing the map_lines [graph]
-    for (unsigned i=0; i<graph.size(); i++) {
-      for(unsigned j=0; j<graph[i].size(); j++){
-        cv::line(plot, cv::Point2f(graph_vertices[i].x*enlarge,graph_vertices[i].y*enlarge), cv::Point2f(graph_vertices[graph[i][j]].x*enlarge,graph_vertices[graph[i][j]].y*enlarge), cv::Scalar(255,0,0), 1);
-    // cv::imshow("Clipper", plot);
-    // cv::waitKey(0); 
-      }
-    }
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0);  
-    //drawing the original path_lines
-    for (unsigned i=1; i<my_path.size(); i++) {
-      cv::line(plot, cv::Point2f(graph_vertices[my_path[i-1]].x*enlarge,graph_vertices[my_path[i-1]].y*enlarge), cv::Point2f(graph_vertices[my_path[i]].x*enlarge,graph_vertices[my_path[i]].y*enlarge), cv::Scalar(50,255,0), 2);
-    }
-    //drawing the optimzed_graph
-    // for(int i = 0; i < optimized_graph.size(); i++){
-    //   cout << "i: " << i << endl;
-    //   for(int j = 0; j < optimized_graph[i].size(); j++) {  
-    //     cout << "j: " << j << endl;
-    //     cout << "1.x: " << new_graph_vertices[i].x;
-    //     cout << " 1.y: " << new_graph_vertices[i].x<<endl;
-    //     cout << "2.x: " << new_graph_vertices[optimized_graph[i][j]].x;
-    //     cout << " 2.y: " << new_graph_vertices[optimized_graph[i][j]].y<<endl;
-    //     cv::line(plot, cv::Point2f(new_graph_vertices[i].x*enlarge,new_graph_vertices[i].y*enlarge), cv::Point2f(new_graph_vertices[optimized_graph[i][j]].x*enlarge,new_graph_vertices[optimized_graph[i][j]].y*enlarge), cv::Scalar(255,0,0), 1);
-
-    //   }
-    // }
-
-    //drawing the optimized path_lines
-    for (unsigned i=1; i<optimized_path.size(); i++) {
-      cv::line(plot, cv::Point2f(new_graph_vertices[optimized_path[i-1]].x*enlarge,new_graph_vertices[optimized_path[i-1]].y*enlarge), cv::Point2f(new_graph_vertices[optimized_path[i]].x*enlarge,new_graph_vertices[optimized_path[i]].y*enlarge), cv::Scalar(0,20,255), 2);
-    }
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0);    
-    // --------------------------------------------
-
-    // changing the path index to actual points for dubins
+    //changing the path index to actual points for dubins
     std::vector<robotPos> path_points;
-    robotPos temp_pt;
-    for (unsigned i=0; i<optimized_path.size(); i++) {
-      temp_pt = {new_graph_vertices[optimized_path[i]].x, new_graph_vertices[optimized_path[i]].y,-1};
-      cout << "optimized point: (x: " << temp_pt.x << " , y: "<<  temp_pt.y << " , theta: " << temp_pt.th << " ) " << endl;
-      path_points.push_back(temp_pt);
-    }
+    path_points = index_to_coordinates(optimized_path, new_graph_vertices);
 
-    // Test dubins --------------------------------
+    //printing and plotting the results
+    print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices, optimized_graph, my_path, optimized_path);
+    plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices, new_graph_vertices, optimized_path, my_path); 
+    
+
+    //DUBINS PATH
+
     float Kmax = 5.0;
 
     // A fake path from roadmap
@@ -1331,10 +223,8 @@ namespace student {
       }
     }
 
-    // --------------------------------------------
+    //END OF DUBBINS PATH
 
     return true;
-    //throw std::logic_error( "STUDENT FUNCTION - PLAN PATH - NOT IMPLEMENTED" );
   }
 }
-
