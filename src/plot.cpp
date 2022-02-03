@@ -143,7 +143,4 @@ void plot_map (cv::Mat plot, std::vector<POINT> sorted_vertices, std::vector<std
     }
     cv::imshow("Clipper", plot);
 
-    //close the plot on key press
-    cv::waitKey(0);    
-    cv::destroyAllWindows();
 }

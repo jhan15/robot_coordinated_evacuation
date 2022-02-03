@@ -98,13 +98,19 @@ namespace student {
     for (const auto &position : inflated_borders) {
       boundary.push_back({position.x,position.y});
     }
- 
+    
+    //number of robots spawned
+    int robots_number = 0;
+
     //convert input start points data into the data format we use 
     std::vector<POINT> start_point;
     for (int i = 0; i < x.size(); i++) {
       start_point.push_back(POINT{x[i],y[i],theta[i]});
+      //we assume that if the starting position is (0,0,0) the robot is not spawned
+      //doesn't really relevant for the examined case where the robots are always 3
+      if (x[i] + y[i] + theta[i] != 0) robots_number += 1;
     }   
-    
+
     //convert input gate position data into the data format we use
     std::vector<POINT> gate;
     //end point is the center of the gate 
@@ -161,43 +167,59 @@ namespace student {
     cells = boundary_cells(boundary, cells, sorted_vertices, y_limit_lower, y_limit_upper);
 
     //getting the graph edges & vertices
-    std::vector<POINT> graph_edges;
-    std::vector<POINT> graph_vertices;
-    tie(graph_edges, graph_vertices) = get_graph(cells);
+    //these are for the common map and not robot specific
+    std::vector<POINT> graph_edges_map;
+    std::vector<POINT> graph_vertices_map;
+    tie(graph_edges_map, graph_vertices_map) = get_graph(cells);
+ 
+    //vectors to keep the paths for all robots
+    std::vector<std::vector<int>> my_path;
+    std::vector<std::vector<int>> optimized_path;
+    std::vector<std::vector<robotPos>> path_points;
+    //initializing them ampty
+    my_path = {{}, {}, {}};
+    optimized_path = {{}, {}, {}};
+    path_points = {{}, {}, {}};
     
-    //adding the start and end point for each robot into the graph
-    tie(graph_edges, graph_vertices) = add_start_end(graph_vertices, graph_edges, start_point, end_point, obstacles);
+    //the graph is adjusted for each point by adding its starting point
+    //then a path is calculated for each robot
+    for(int robot = 0; robot < robots_number; robot ++) {
+      //these are changed per robot
+      std::vector<POINT> graph_edges;
+      std::vector<POINT> graph_vertices; 
+      
+      //adding the start and end point for each robot into the graph
+      tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_point, obstacles);
 
-    //constructing the graph
-    std::vector< std::vector<int> > graph;
-    graph = graph_construction(graph_vertices, graph_edges);
+      //constructing the graph
+      std::vector< std::vector<int> > graph;
+      graph = graph_construction(graph_vertices, graph_edges);
     
-    //finding a path using breadth first search
-    std::vector<int> my_path;
-    my_path = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
+      //finding a path using breadth first search
+      my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
 
-    //separating only the graph vertices which belong to the path for optimization purposes
-    std::vector<POINT> new_graph_vertices;
-    for(int i = 0 ; i< my_path.size();i++){
-      new_graph_vertices.push_back({graph_vertices[my_path[i]].x,graph_vertices[my_path[i]].y});
-    }
+      //separating only the graph vertices which belong to the path for optimization purposes
+      std::vector<POINT> new_graph_vertices;
+      new_graph_vertices.clear();
+      for(int i = 0 ; i < my_path[robot].size(); i++){
+        new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
+      }
 
-    //optimizing the graph
-    std::vector< std::vector<int> >  optimized_graph;
-    optimized_graph = optimize_graph(my_path, new_graph_vertices, obstacles);
+      //optimizing the graph
+      std::vector< std::vector<int> >  optimized_graph;
+      optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
 
-    //calculating the optimized path using breadth first search
-    std::vector<int> optimized_path;
-    optimized_path = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
+      //calculating the optimized path using breadth first search
+      optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
 
-    //changing the path index to actual points for dubins
-    std::vector<robotPos> path_points;
-    path_points = index_to_coordinates(optimized_path, new_graph_vertices);
+      //changing the path index to actual points for dubins
+      path_points[robot] = index_to_coordinates(optimized_path[robot], new_graph_vertices);
 
-    //printing and plotting the results
-    print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices, optimized_graph, my_path, optimized_path);
-    plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices, new_graph_vertices, optimized_path, my_path); 
-    
+      //printing and plotting the results
+      cout << "RESULTS FOR ROBOT " << robot << endl;
+      print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices, optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
+      plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices, new_graph_vertices, optimized_path[robot], my_path[robot]); 
+    }    
 
     //DUBINS PATH
 
@@ -224,6 +246,10 @@ namespace student {
     }
 
     //END OF DUBBINS PATH
+
+    //close the plot on key press
+    cv::waitKey(0);    
+    cv::destroyAllWindows();
 
     return true;
   }

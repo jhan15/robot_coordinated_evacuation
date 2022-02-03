@@ -945,7 +945,7 @@ bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segm
 }
 
 
-tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, vector<POINT> start_point, vector<POINT> end_point, std::vector<std::vector<POINT>> obstacles){
+tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, vector<POINT> end_point, std::vector<std::vector<POINT>> obstacles){
     //Source
     int min_ind = -1; 
     float min = INFINITY;
@@ -956,7 +956,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
     SEGMENT temp_segment;
 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      temp_segment.a = start_point[0]; //TODO: change for more than one robot
+      temp_segment.a = start_point;
       temp_segment.b = graph_vertices[vertex];
 
       // FOR DEBUG
@@ -974,7 +974,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
 
       // find the closest vertex in the graph to the start point
       if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], start_point[0]); //TODO: change for more than one robot
+        dist = find_dist(graph_vertices[vertex], start_point);
         // std::cout << "current distance: " << dist << "minimum distance: " << min << std::endl;
         if(dist < min) {
           min = dist;
@@ -990,7 +990,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
       //return false;
     }
 
-    graph_vertices.push_back(start_point[0]); //TODO: change for more than one robot
+    graph_vertices.push_back(start_point);
     m = graph_vertices.size()-1;
     temp_point.x = min_ind;
     temp_point.y = m;
@@ -1073,6 +1073,7 @@ std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int targ
         visited.push_back(0);
         parent.push_back(-1);
     }
+
     queue.push_back(source);
     while(queue.size() > 0){
         // std::cout << "in queue now:" << std::endl;
@@ -1080,7 +1081,6 @@ std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int targ
         //     std::cout  << queue[i] << " , ";
         // }
         // std::cout << "\n--------------" << std::endl;
-
         current = queue[0];
         queue.erase(queue.begin());
         if (current == target) {
@@ -1160,7 +1160,7 @@ std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vec
 }
 
 
-void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std::vector<POINT> end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path) {    
+void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std::vector<POINT> end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points) {    
     
     // FOR DEBUG
     // std::cout<<"\n>>>> Border postion:"<<std::endl;
@@ -1239,13 +1239,22 @@ void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std
       if(i != path.size() - 1) { cout << ", "; }
     }
     cout << endl;
+    cout << endl;
 
     cout <<"OPTIMIZED PATH: "<< endl; 
     for(int i = 0; i < optimized_path.size(); i++){
       cout << optimized_path[i];
       if(i != optimized_path.size() - 1) { cout << ", "; }
     }
-    cout << endl;    
+    cout << endl;
+    cout << endl;
+
+    cout <<"OPTIMIZED PATH WITH COORDINATES: "<< endl; 
+    for(int i = 0; i < path_points.size(); i++){
+      cout << "x=" << path_points[i].x << " y=" << path_points[i].y << " theta=" << path_points[i].th << endl;
+    }
+    cout << endl;
+    cout << endl;   
 }
 
 
