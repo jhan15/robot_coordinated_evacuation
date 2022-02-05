@@ -9,8 +9,10 @@
 #include <cmath>
 #include "plot.hpp"
 #include "dubins.h"
+#include "collision.hpp"
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
+
 
 int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
 
@@ -222,15 +224,31 @@ namespace student {
     }    
 
     //DUBINS PATH
+    std::vector<Point2d> line1 = {Point2d(0.2, 0.2), Point2d(0.4, 0.2)};
+    std::vector<Point2d> line2 = {Point2d(0.3, 0.1), Point2d(0.3, 0.3)};
+    double aa = 0.3;
+    double bb = 0.15;
+    double rr = 0.07;
 
-    float Kmax = 5.0;
+    std::vector<Point2d> coll = line_line_coll(line1, line2);
+    std::cout<<coll.size()<< endl;
+
+    std::vector<Point2d> coll1 = circle_line_coll(aa, bb, rr, line1);
+    std::cout<<coll1.size()<<endl;
+
+    float Kmax = 8.0;
 
     // A fake path from roadmap
-    robotPos pos0 = {x[0], y[0], theta[0]};
-    robotPos pos1 = {0.8, 0.6, -M_PI/6};
-    robotPos pos2 = {1.3, 0.96, 0};
-
-    std::vector<robotPos> rmPos = {pos0, pos1, pos2};
+    std::vector<float> xl = {x[0], 0.5, 0.9, 1.3};
+    std::vector<float> yl = {y[0], 0.7, 0.5, 0.96};
+    float th1 = atan2(yl[2]-yl[1], xl[2]-xl[1]);
+    float th2 = atan2(yl[3]-yl[2], xl[3]-xl[2]);
+    float th3 = th2;
+    robotPos pos0 = {xl[0], yl[0], theta[0]};
+    robotPos pos1 = {xl[1], yl[1], th1};
+    robotPos pos2 = {xl[2], yl[2], th2};
+    robotPos pos3 = {xl[3], yl[3], th3};
+    std::vector<robotPos> rmPos = {pos0, pos1, pos2, pos3};
 
     // Compute the dubins path between two adjacent points
     for (auto it0 = rmPos.begin(), it1 = std::next(rmPos.begin());

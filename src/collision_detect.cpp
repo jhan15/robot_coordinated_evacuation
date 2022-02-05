@@ -2,11 +2,12 @@
 
 #include <vector>
 #include <cmath>
+#include "collision.hpp"
 
 using namespace cv;
 
-std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
-std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line);
+//std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
+//std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line);
 
 
 
@@ -105,7 +106,7 @@ std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Poi
 /*
 checks if a line and a circle intersect [collide]. returns a vector of points of intersection if any
 */
-std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line){
+std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<Point2d> line){
     std::vector<Point2d> pts;
 	std::vector<double> t;
 

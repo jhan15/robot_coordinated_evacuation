@@ -1,0 +1,9 @@
+#include <opencv2/opencv.hpp>
+
+#include <vector>
+#include <cmath>
+
+using namespace cv;
+
+std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
+std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<Point2d> line);
