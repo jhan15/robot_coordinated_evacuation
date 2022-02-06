@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include "collision.hpp"
+#include "dubins.h"
 
 using namespace cv;
 
@@ -161,4 +162,30 @@ std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<
 
     return pts;
 
+}
+
+bool arc_line_coll(double a, double b, double r, double s, double e, std::vector<Point2d> line)
+{
+	bool result = false;
+
+	std::vector<Point2d> pts = circle_line_coll(a, b, r, line);
+
+	if (pts.size() > 0)
+	{
+		for (auto it = pts.begin(); it != pts.end(); it++)
+		{
+			float theta = atan2((*it).y-b, (*it).x-a);
+			theta = mod2Pi(theta);
+			if (s < e && theta >= s && theta <= e)
+			{
+				result = true;
+			}
+			if (s > e && !(theta > e && theta < s))
+			{
+				result = true;
+			}
+		}
+	}
+
+	return result;
 }

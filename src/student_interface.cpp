@@ -236,6 +236,16 @@ namespace student {
     std::vector<Point2d> coll1 = circle_line_coll(aa, bb, rr, line1);
     std::cout<<coll1.size()<<endl;
 
+    double ss = M_PI / 6;
+    double ee = 5 * M_PI / 6;
+    bool coll2 = arc_line_coll(aa, bb, rr, ss, ee, line1);
+    std::cout<<coll2<<endl;
+
+    double ss2 = 7 * M_PI / 6;
+    double ee2 = 11 * M_PI / 6;
+    bool coll3 = arc_line_coll(aa, bb, rr, ss2, ee2, line1);
+    std::cout<<coll3<<endl;
+
     float Kmax = 8.0;
 
     // A fake path from roadmap
