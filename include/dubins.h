@@ -31,6 +31,13 @@ using namespace std;
 //          DEFINE SOME STRUCTS THAT WILL BE USED
 //----------------------------------------------------------------
 
+
+struct pt
+{
+    float x;
+    float y;
+};
+
 // Define the structure of robot pos
 struct robotPos
 {
@@ -111,7 +118,7 @@ struct dubinsWaypoint
 // Define the result structure of finding the shortest dubins path
 struct shortestDubinsResult
 {
-    int pidx = -1;
+    bool find_dubins = false;
     dubinsCurve curve;
     vector<dubinsWaypoint> dubinsWPList;
 };
@@ -188,7 +195,8 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks);
 //----------------------------------------------------------------
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
-vector<dubinsCurve> dubinsPath(robotPos pos0, robotPos posf, float Kmax, bool print=false);
+shortestDubinsResult dubinsPath(robotPos pos0, robotPos posf, float Kmax, vector<vector<pt>> obstacles, bool print=false);
+bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax);
 
 //----------------------------------------------------------------
 //          GET DUBINS PATH WAYPOINTS

@@ -225,72 +225,57 @@ namespace student {
                new_graph_vertices, optimized_path[robot], my_path[robot]); 
     }    
 
-    // DUBINS PATH
 
-    // std::vector<Point2d> line1 = {Point2d(0.2, 0.2), Point2d(0.4, 0.2)};
-    // std::vector<Point2d> line2 = {Point2d(0.3, 0.1), Point2d(0.3, 0.3)};
-    // double aa = 0.3;
-    // double bb = 0.15;
-    // double rr = 0.07;
-
-    // std::vector<Point2d> coll = line_line_coll(line1, line2);
-    // std::cout<<coll.size()<< endl;
-
-    // std::vector<Point2d> coll1 = circle_line_coll(aa, bb, rr, line1);
-    // std::cout<<coll1.size()<<endl;
-
-    // double ss = M_PI / 6;
-    // double ee = 5 * M_PI / 6;
-    // bool coll2 = arc_line_coll(aa, bb, rr, ss, ee, line1);
-    // std::cout<<coll2<<endl;
-
-    // double ss2 = 7 * M_PI / 6;
-    // double ee2 = 11 * M_PI / 6;
-    // bool coll3 = arc_line_coll(aa, bb, rr, ss2, ee2, line1);
-    // std::cout<<coll3<<endl;
-
-    std::cout<<"------------obstacles:"<<endl;
-    for (int i=0; i<inflated_obstacle_list.size(); i++)
-    {
-        for (const auto &position : inflated_obstacle_list[i])
-        {
-            std::cout<<position.x<<" "<<position.y<<" ";
-        }
-        std::cout<<endl;
-    }
-
-    
+    // DUBINS
     // Compute the orientations of path_points
     for(int robot = 0; robot < robots_number; robot ++) {
-      path_points[robot][0].th = theta[robot];
+      path_points[robot][0].th = mod2Pi(theta[robot]);
       if (path_points[robot].size() > 2)
       {
         for (int id=1; id<path_points[robot].size(); id++)
         {
           if (id == path_points[robot].size()-1) path_points[robot][id].th = path_points[robot][id-1].th;
-          else path_points[robot][id].th = atan2(path_points[robot][id+1].y-path_points[robot][id].y,
-                                                 path_points[robot][id+1].x-path_points[robot][id].x);
+          else path_points[robot][id].th = mod2Pi(atan2(path_points[robot][id+1].y-path_points[robot][id].y,
+                                                        path_points[robot][id+1].x-path_points[robot][id].x));
         }
       }
     }
 
-    float Kmax = 5.0;
+    // Concatenate obstacles and boundary as one vector for collision detection
+    boundary.push_back(boundary.front());
+    std::vector<std::vector<pt>> obs;
+    std::vector<pt> ob;
+    for (int i=0; i<obstacles.size(); i++){
+      for (int j=0; j<obstacles[i].size(); j++){
+        ob.push_back(pt{obstacles[i][j].x, obstacles[i][j].y});
+      }
+      obs.push_back(ob);
+      ob.clear();
+    }
+    for (int j=0; j<boundary.size(); j++){
+      ob.push_back(pt{boundary[j].x, boundary[j].y});
+    }
+    obs.push_back(ob);
 
-    // Compute the dubins path between two adjacent points
+    float Kmax = 8.0;
+
+    // Compute the collision-free dubins path between two points
+    // right now only for robot 0
+    int count = 0;
+    std::cout<<"Total points for robot 0: "<<path_points[0].size()<<std::endl;
     for (auto it0 = path_points[0].begin(), it1 = std::next(path_points[0].begin());
          it0 != std::prev(path_points[0].end()) && it1 != path_points[0].end(); ++it0, ++it1)
     {
-      std::vector<dubinsCurve> result = dubinsPath(*it0, *it1, Kmax);
-      if (result.size() > 0) {
-        // todo: check collision
-        
-
-
-        vector<dubinsWaypoint> dubinsWPList = getDubinsWaypoints(result[0]);
-        for (auto it = dubinsWPList.begin(); it != dubinsWPList.end(); ++it){
+      std::cout<<"---- collision-free dubins path between points "<<count<<" and "<<count+1<<": ";
+      shortestDubinsResult sd = dubinsPath(*it0, *it1, Kmax, obs);
+      if (sd.find_dubins){
+        std::cout<<"yes"<<std::endl;
+        for (auto it = sd.dubinsWPList.begin(); it != sd.dubinsWPList.end(); ++it){
           path[0].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
         }
       }
+      else std::cout<<"no"<<std::endl;
+      count = count + 1;
     }
 
     // END OF DUBBINS PATH

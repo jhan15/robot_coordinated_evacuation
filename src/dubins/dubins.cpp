@@ -27,6 +27,7 @@
 #include <limits>
 #include <assert.h>
 #include "dubins.h"
+#include "collision.hpp"
 
 using namespace std;
 
@@ -391,8 +392,10 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks)
 //----------------------------------------------------------------
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
-vector<dubinsCurve> dubinsPath(robotPos pos0, robotPos posf, float Kmax, bool print)
+shortestDubinsResult dubinsPath(robotPos pos0, robotPos posf, float Kmax, vector<vector<pt>> obstacles, bool print)
 {
+    shortestDubinsResult sd;
+
     scParamsWithLambda sc_lambda = scaleToStandard(pos0, posf, Kmax);
 
     if (print)
@@ -480,7 +483,68 @@ vector<dubinsCurve> dubinsPath(robotPos pos0, robotPos posf, float Kmax, bool pr
         }
     }
 
-    return result;
+    if (result.size() > 0){
+        for (int i = 0; i < result.size(); i++){
+            bool coll = false;
+            if (result[i].a1.L > 0){
+                coll = checkCollision(result[i].a1, obstacles, Kmax);
+            }
+            if (result[i].a2.L > 0 && !coll){
+                coll = checkCollision(result[i].a2, obstacles, Kmax);
+            }
+            if (result[i].a3.L > 0 && !coll){
+                coll = checkCollision(result[i].a3, obstacles, Kmax);
+            }
+            if (!coll){
+                sd.find_dubins = true;
+                sd.curve = result[i];
+                sd.dubinsWPList = getDubinsWaypoints(result[i]);
+                break;
+            }
+        }
+    }
+
+    return sd;
+}
+
+bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax)
+{
+    vector<Point2d> line2;
+    double x, y, s, e;
+
+    if (a.k == 0){
+        line2 = {Point2d(a.pos0.x, a.pos0.y), Point2d(a.posf.x, a.posf.y)};
+    }
+    else {
+        if (a.k > 0){
+            x = a.pos0.x - sin(a.pos0.th)/Kmax;
+            y = a.pos0.y + cos(a.pos0.th)/Kmax;
+            s = mod2Pi(a.pos0.th - M_PI/2);
+            e = mod2Pi(a.posf.th - M_PI/2);
+        }
+        if (a.k < 0){
+            x = a.pos0.x + sin(a.pos0.th)/Kmax;
+            y = a.pos0.y - cos(a.pos0.th)/Kmax;
+            s = mod2Pi(a.posf.th + M_PI/2);
+            e = mod2Pi(a.pos0.th + M_PI/2);
+        }
+    }
+    for (int i = 0; i < obs.size(); i++){
+        for (int j = 0; j < (obs[i].size()-1); j++){
+            vector<Point2d> line1 = {Point2d(obs[i][j].x, obs[i][j].y),
+                                     Point2d(obs[i][j+1].x, obs[i][j+1].y)};
+            if (a.k == 0){
+                vector<Point2d> pts = line_line_coll(line1, line2);
+                if (pts.size() > 0) return true;
+            }
+            else {
+                bool re = arc_line_coll(x, y, 1/Kmax, s, e, line1);
+                if (re) return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 // shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print)
