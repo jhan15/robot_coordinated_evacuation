@@ -191,6 +191,7 @@ primitiveResult LSL(scParams sc)
         primitive.sl.sc_s2 = invK * sqrt(temp2);
         primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - temp1);
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -221,6 +222,7 @@ primitiveResult RSR(scParams sc)
         primitive.sl.sc_s2 = invK * sqrt(temp2);
         primitive.sl.sc_s3 = invK * mod2Pi(temp1 - sc.sc_thf);
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -252,6 +254,7 @@ primitiveResult LSR(scParams sc)
         primitive.sl.sc_s1 = invK * mod2Pi(temp1 + temp2 - sc.sc_th0);
         primitive.sl.sc_s3 = invK * mod2Pi(temp1 + temp2 - sc.sc_thf);
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -283,6 +286,7 @@ primitiveResult RSL(scParams sc)
         primitive.sl.sc_s1 = invK * mod2Pi(sc.sc_th0 - temp1 + temp2);
         primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - temp1 + temp2);
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -315,6 +319,7 @@ primitiveResult RLR(scParams sc)
         primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_th0 - sc.sc_thf +
                              sc.sc_Kmax * (primitive.sl.sc_s2 - primitive.sl.sc_s1));
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -347,6 +352,7 @@ primitiveResult LRL(scParams sc)
         primitive.sl.sc_s3 = invK * mod2Pi(sc.sc_thf - sc.sc_th0 +
                              sc.sc_Kmax * (primitive.sl.sc_s2 - primitive.sl.sc_s1));
     }
+    primitive.sum_sl = primitive.sl.sc_s1 + primitive.sl.sc_s2 + primitive.sl.sc_s3;
 
     return primitive;
 }
@@ -385,10 +391,8 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks)
 //----------------------------------------------------------------
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
-shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print)
+vector<dubinsCurve> dubinsPath(robotPos pos0, robotPos posf, float Kmax, bool print)
 {
-    shortestDubinsResult result;
-
     scParamsWithLambda sc_lambda = scaleToStandard(pos0, posf, Kmax);
 
     if (print)
@@ -424,23 +428,14 @@ shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax
          1, -1,  1
     };
 
-    float L = numeric_limits<float>::infinity();
-    float Lcur;
     primitiveResult pr_cur;
     standardLength sl_best;
+    vector<dubinsCurve> result;
 
     for (int i=0; i<6; i++)
     {
         pr_cur = primitives[i](sc_lambda.sc);
-        Lcur = pr_cur.sl.sc_s1 + pr_cur.sl.sc_s2 + pr_cur.sl.sc_s3;
-
-        if (pr_cur.ok && Lcur < L)
-        {
-            L = Lcur;
-            sl_best = pr_cur.sl;
-            result.pidx = i;
-        }
-
+        pr_cur.id = i;
         if (print)
         {
             printf("\n--> %s:\n", dubinsWords[i].c_str());
@@ -448,75 +443,178 @@ shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax
                     pr_cur.sl.sc_s1,
                     pr_cur.sl.sc_s2,
                     pr_cur.sl.sc_s3,
-                    Lcur);
-            printf("\nCurrent best: %s, std length: %.2f\n", dubinsWords[result.pidx].c_str(), L);
+                    pr_cur.sum_sl);
         }
-    }
 
-    if (result.pidx > -1)
-    {
-        originalLength ol = scaleFromStandard(sc_lambda.lambda, sl_best);
+        if (!pr_cur.ok) continue;
+
+        originalLength ol = scaleFromStandard(sc_lambda.lambda, pr_cur.sl);
         float ks[3] =
         {
-            ksigns[result.pidx][0] * Kmax,
-            ksigns[result.pidx][1] * Kmax,
-            ksigns[result.pidx][2] * Kmax
+            ksigns[pr_cur.id][0] * Kmax,
+            ksigns[pr_cur.id][1] * Kmax,
+            ksigns[pr_cur.id][2] * Kmax
         };
-        float sc_ks[3] = 
+        dubinsCurve dc = createCurve(pos0, ol, ks);
+
+        if (result.size()==0) result.push_back(dc);
+        else if (result.size()==1)
         {
-            ksigns[result.pidx][0] * sc_lambda.sc.sc_Kmax,
-            ksigns[result.pidx][1] * sc_lambda.sc.sc_Kmax,
-            ksigns[result.pidx][2] * sc_lambda.sc.sc_Kmax
-        };
-
-        result.curve = createCurve(pos0, ol, ks);
-
-        result.dubinsWPList = getDubinsWaypoints(result.curve);
-
-        // assert(check(sl_best, sc_ks, sc_lambda.sc));
-
-        if (print)
+            if (dc.L > result.back().L) result.push_back(dc);
+            else result.insert(result.begin(), dc);
+        }
+        else
         {
-            printf("\n****** Final result ******\n");
-            printf("\nBest solution: %s, total lenght: %.2f\n",
-                    dubinsWords[result.pidx].c_str(),
-                    result.curve.L);
-            
-            printf("\n--> Curve 1/3:\n");
-            printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
-                    result.curve.a1.pos0.x,
-                    result.curve.a1.pos0.y,
-                    result.curve.a1.pos0.th);
-            printf("\tL = %.2f\n", result.curve.a1.L);
-            printf("\tk = %.2f\n", result.curve.a1.k);
-
-            printf("\n--> Curve 2/3:\n");
-            printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
-                    result.curve.a2.pos0.x,
-                    result.curve.a2.pos0.y,
-                    result.curve.a2.pos0.th);
-            printf("\tL = %.2f\n", result.curve.a2.L);
-            printf("\tk = %.2f\n", result.curve.a2.k);
-
-            printf("\n--> Curve 3/3:\n");
-            printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
-                    result.curve.a3.pos0.x,
-                    result.curve.a3.pos0.y,
-                    result.curve.a3.pos0.th);
-            printf("\tL = %.2f\n", result.curve.a3.L);
-            printf("\tk = %.2f\n", result.curve.a3.k);
-
-            printf("\nWaypoint list:\n");
-            for (auto it = result.dubinsWPList.begin(); it != result.dubinsWPList.end(); ++it)
-            {
-                printf("x = %.2f\ty = %.2f\ttheta = %.2f\ts = %.2f\tk = %.2f\n",
-                        (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).s, (*it).k);
+            if (dc.L < result[0].L) result.insert(result.begin(), dc);
+            else if (dc.L > result.back().L) result.push_back(dc);
+            else {
+                for (int j=0; j<(result.size()-1); j++)
+                {
+                    if (dc.L >= result[j].L && dc.L <= result[j+1].L)
+                    {
+                        result.insert(result.begin()+j+1, dc);
+                        break;
+                    }
+                }
             }
         }
     }
 
     return result;
 }
+
+// shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print)
+// {
+//     shortestDubinsResult result;
+
+//     scParamsWithLambda sc_lambda = scaleToStandard(pos0, posf, Kmax);
+
+//     if (print)
+//     {
+//         printf("\n****** Find the shortest dubins curve! ******\n");
+//         printf("\nStart pos: (%.2f, %.2f, %.2f)\n", pos0.x, pos0.y, pos0.th);
+//         printf("End pos: (%.2f, %.2f, %.2f)\n", posf.x, posf.y, posf.th);
+//         printf("Kmax = %.2f\n", Kmax);
+//         printf("\nScaled to standard:\n\n\tsc_th0: %.2f\n\tsc_thf: %.2f\n\tsc_Kmax: %.2f\n\tlambda: %.2f\n",
+//                 sc_lambda.sc.sc_th0,
+//                 sc_lambda.sc.sc_thf,
+//                 sc_lambda.sc.sc_Kmax,
+//                 sc_lambda.lambda);
+//     }
+
+//     DubinsTypes primitives[] =
+//     {
+//         LSL,
+//         RSR,
+//         LSR,
+//         RSL,
+//         RLR,
+//         LRL
+//     };
+
+//     const int ksigns[6][3] =
+//     {
+//          1,  0,  1,
+//         -1,  0, -1,
+//          1,  0, -1,
+//         -1,  0,  1,
+//         -1,  1, -1,
+//          1, -1,  1
+//     };
+
+//     float L = numeric_limits<float>::infinity();
+//     float Lcur;
+//     primitiveResult pr_cur;
+//     standardLength sl_best;
+
+//     for (int i=0; i<6; i++)
+//     {
+//         pr_cur = primitives[i](sc_lambda.sc);
+//         Lcur = pr_cur.sl.sc_s1 + pr_cur.sl.sc_s2 + pr_cur.sl.sc_s3;
+
+//         if (pr_cur.ok && Lcur < L)
+//         {
+//             L = Lcur;
+//             sl_best = pr_cur.sl;
+//             result.pidx = i;
+//         }
+
+//         if (print)
+//         {
+//             printf("\n--> %s:\n", dubinsWords[i].c_str());
+//             printf("\tsc_s1 = %.2f\n\tsc_s2 = %.2f\n\tsc_s3 = %.2f\n\tsum = %.2f\n",
+//                     pr_cur.sl.sc_s1,
+//                     pr_cur.sl.sc_s2,
+//                     pr_cur.sl.sc_s3,
+//                     Lcur);
+//             printf("\nCurrent best: %s, std length: %.2f\n", dubinsWords[result.pidx].c_str(), L);
+//         }
+//     }
+
+//     if (result.pidx > -1)
+//     {
+//         originalLength ol = scaleFromStandard(sc_lambda.lambda, sl_best);
+//         float ks[3] =
+//         {
+//             ksigns[result.pidx][0] * Kmax,
+//             ksigns[result.pidx][1] * Kmax,
+//             ksigns[result.pidx][2] * Kmax
+//         };
+//         float sc_ks[3] = 
+//         {
+//             ksigns[result.pidx][0] * sc_lambda.sc.sc_Kmax,
+//             ksigns[result.pidx][1] * sc_lambda.sc.sc_Kmax,
+//             ksigns[result.pidx][2] * sc_lambda.sc.sc_Kmax
+//         };
+
+//         result.curve = createCurve(pos0, ol, ks);
+
+//         result.dubinsWPList = getDubinsWaypoints(result.curve);
+
+//         // assert(check(sl_best, sc_ks, sc_lambda.sc));
+
+//         if (print)
+//         {
+//             printf("\n****** Final result ******\n");
+//             printf("\nBest solution: %s, total lenght: %.2f\n",
+//                     dubinsWords[result.pidx].c_str(),
+//                     result.curve.L);
+            
+//             printf("\n--> Curve 1/3:\n");
+//             printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
+//                     result.curve.a1.pos0.x,
+//                     result.curve.a1.pos0.y,
+//                     result.curve.a1.pos0.th);
+//             printf("\tL = %.2f\n", result.curve.a1.L);
+//             printf("\tk = %.2f\n", result.curve.a1.k);
+
+//             printf("\n--> Curve 2/3:\n");
+//             printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
+//                     result.curve.a2.pos0.x,
+//                     result.curve.a2.pos0.y,
+//                     result.curve.a2.pos0.th);
+//             printf("\tL = %.2f\n", result.curve.a2.L);
+//             printf("\tk = %.2f\n", result.curve.a2.k);
+
+//             printf("\n--> Curve 3/3:\n");
+//             printf("\tStart pos: (%.2f, %.2f, %.2f)\n",
+//                     result.curve.a3.pos0.x,
+//                     result.curve.a3.pos0.y,
+//                     result.curve.a3.pos0.th);
+//             printf("\tL = %.2f\n", result.curve.a3.L);
+//             printf("\tk = %.2f\n", result.curve.a3.k);
+
+//             printf("\nWaypoint list:\n");
+//             for (auto it = result.dubinsWPList.begin(); it != result.dubinsWPList.end(); ++it)
+//             {
+//                 printf("x = %.2f\ty = %.2f\ttheta = %.2f\ts = %.2f\tk = %.2f\n",
+//                         (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).s, (*it).k);
+//             }
+//         }
+//     }
+
+//     return result;
+// }
 
 
 //----------------------------------------------------------------

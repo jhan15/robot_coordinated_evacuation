@@ -96,6 +96,8 @@ struct primitiveResult
 {
     bool ok;
     standardLength sl;
+    float sum_sl;
+    int id;
 };
 
 // Define dubins waypoint structure
@@ -186,7 +188,7 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks);
 //----------------------------------------------------------------
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
-shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print=false);
+vector<dubinsCurve> dubinsPath(robotPos pos0, robotPos posf, float Kmax, bool print=false);
 
 //----------------------------------------------------------------
 //          GET DUBINS PATH WAYPOINTS

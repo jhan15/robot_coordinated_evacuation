@@ -178,7 +178,7 @@ namespace student {
     std::vector<std::vector<int>> my_path;
     std::vector<std::vector<int>> optimized_path;
     std::vector<std::vector<robotPos>> path_points;
-    //initializing them ampty
+    //initializing them empty
     my_path = {{}, {}, {}};
     optimized_path = {{}, {}, {}};
     path_points = {{}, {}, {}};
@@ -219,61 +219,81 @@ namespace student {
 
       //printing and plotting the results
       cout << "RESULTS FOR ROBOT " << robot << endl;
-      print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices, optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
-      plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices, new_graph_vertices, optimized_path[robot], my_path[robot]); 
+      print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices,
+                 optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
+      plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices,
+               new_graph_vertices, optimized_path[robot], my_path[robot]); 
     }    
 
-    //DUBINS PATH
-    std::vector<Point2d> line1 = {Point2d(0.2, 0.2), Point2d(0.4, 0.2)};
-    std::vector<Point2d> line2 = {Point2d(0.3, 0.1), Point2d(0.3, 0.3)};
-    double aa = 0.3;
-    double bb = 0.15;
-    double rr = 0.07;
+    // DUBINS PATH
 
-    std::vector<Point2d> coll = line_line_coll(line1, line2);
-    std::cout<<coll.size()<< endl;
+    // std::vector<Point2d> line1 = {Point2d(0.2, 0.2), Point2d(0.4, 0.2)};
+    // std::vector<Point2d> line2 = {Point2d(0.3, 0.1), Point2d(0.3, 0.3)};
+    // double aa = 0.3;
+    // double bb = 0.15;
+    // double rr = 0.07;
 
-    std::vector<Point2d> coll1 = circle_line_coll(aa, bb, rr, line1);
-    std::cout<<coll1.size()<<endl;
+    // std::vector<Point2d> coll = line_line_coll(line1, line2);
+    // std::cout<<coll.size()<< endl;
 
-    double ss = M_PI / 6;
-    double ee = 5 * M_PI / 6;
-    bool coll2 = arc_line_coll(aa, bb, rr, ss, ee, line1);
-    std::cout<<coll2<<endl;
+    // std::vector<Point2d> coll1 = circle_line_coll(aa, bb, rr, line1);
+    // std::cout<<coll1.size()<<endl;
 
-    double ss2 = 7 * M_PI / 6;
-    double ee2 = 11 * M_PI / 6;
-    bool coll3 = arc_line_coll(aa, bb, rr, ss2, ee2, line1);
-    std::cout<<coll3<<endl;
+    // double ss = M_PI / 6;
+    // double ee = 5 * M_PI / 6;
+    // bool coll2 = arc_line_coll(aa, bb, rr, ss, ee, line1);
+    // std::cout<<coll2<<endl;
 
-    float Kmax = 8.0;
+    // double ss2 = 7 * M_PI / 6;
+    // double ee2 = 11 * M_PI / 6;
+    // bool coll3 = arc_line_coll(aa, bb, rr, ss2, ee2, line1);
+    // std::cout<<coll3<<endl;
 
-    // A fake path from roadmap
-    std::vector<float> xl = {x[0], 0.5, 0.9, 1.3};
-    std::vector<float> yl = {y[0], 0.7, 0.5, 0.96};
-    float th1 = atan2(yl[2]-yl[1], xl[2]-xl[1]);
-    float th2 = atan2(yl[3]-yl[2], xl[3]-xl[2]);
-    float th3 = th2;
-    robotPos pos0 = {xl[0], yl[0], theta[0]};
-    robotPos pos1 = {xl[1], yl[1], th1};
-    robotPos pos2 = {xl[2], yl[2], th2};
-    robotPos pos3 = {xl[3], yl[3], th3};
-    std::vector<robotPos> rmPos = {pos0, pos1, pos2, pos3};
+    std::cout<<"------------obstacles:"<<endl;
+    for (int i=0; i<inflated_obstacle_list.size(); i++)
+    {
+        for (const auto &position : inflated_obstacle_list[i])
+        {
+            std::cout<<position.x<<" "<<position.y<<" ";
+        }
+        std::cout<<endl;
+    }
+
+    
+    // Compute the orientations of path_points
+    for(int robot = 0; robot < robots_number; robot ++) {
+      path_points[robot][0].th = theta[robot];
+      if (path_points[robot].size() > 2)
+      {
+        for (int id=1; id<path_points[robot].size(); id++)
+        {
+          if (id == path_points[robot].size()-1) path_points[robot][id].th = path_points[robot][id-1].th;
+          else path_points[robot][id].th = atan2(path_points[robot][id+1].y-path_points[robot][id].y,
+                                                 path_points[robot][id+1].x-path_points[robot][id].x);
+        }
+      }
+    }
+
+    float Kmax = 5.0;
 
     // Compute the dubins path between two adjacent points
-    for (auto it0 = rmPos.begin(), it1 = std::next(rmPos.begin());
-         it0 != std::prev(rmPos.end()) && it1 != rmPos.end(); ++it0, ++it1)
+    for (auto it0 = path_points[0].begin(), it1 = std::next(path_points[0].begin());
+         it0 != std::prev(path_points[0].end()) && it1 != path_points[0].end(); ++it0, ++it1)
     {
-      shortestDubinsResult result = dubinsShortestPath(*it0, *it1, Kmax);
+      std::vector<dubinsCurve> result = dubinsPath(*it0, *it1, Kmax);
+      if (result.size() > 0) {
+        // todo: check collision
+        
 
-      if (result.pidx > -1){
-        for (auto it = result.dubinsWPList.begin(); it != result.dubinsWPList.end(); ++it){
+
+        vector<dubinsWaypoint> dubinsWPList = getDubinsWaypoints(result[0]);
+        for (auto it = dubinsWPList.begin(); it != dubinsWPList.end(); ++it){
           path[0].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
         }
       }
     }
 
-    //END OF DUBBINS PATH
+    // END OF DUBBINS PATH
 
     //close the plot on key press
     cv::waitKey(0);    
