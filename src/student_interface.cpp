@@ -239,6 +239,7 @@ namespace student {
                                                         path_points[robot][id+1].x-path_points[robot][id].x));
         }
       }
+      else path_points[robot][1].th = 0;
     }
 
     // Concatenate obstacles and boundary as one vector for collision detection
@@ -257,25 +258,36 @@ namespace student {
     }
     obs.push_back(ob);
 
-    float Kmax = 8.0;
+    float Kmax = 12.0;
 
     // Compute the collision-free dubins path between two points
-    // right now only for robot 0
-    int count = 0;
-    std::cout<<"Total points for robot 0: "<<path_points[0].size()<<std::endl;
-    for (auto it0 = path_points[0].begin(), it1 = std::next(path_points[0].begin());
-         it0 != std::prev(path_points[0].end()) && it1 != path_points[0].end(); ++it0, ++it1)
-    {
-      std::cout<<"---- collision-free dubins path between points "<<count<<" and "<<count+1<<": ";
-      shortestDubinsResult sd = dubinsPath(*it0, *it1, Kmax, obs);
-      if (sd.find_dubins){
-        std::cout<<"yes"<<std::endl;
-        for (auto it = sd.dubinsWPList.begin(); it != sd.dubinsWPList.end(); ++it){
-          path[0].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+    // Store point-pairs w/o collision-free dubins
+    std::vector<std::vector<pt>> remove;
+    std::vector<pt> temp;
+    for(int robot = 0; robot < robots_number; robot ++) {
+      float count = 0;
+      std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
+      for (auto it0 = path_points[robot].begin(), it1 = std::next(path_points[robot].begin());
+          it0 != std::prev(path_points[robot].end()) && it1 != path_points[robot].end(); ++it0, ++it1)
+      {
+        std::cout<<"---- points"<<count<<" ("<<(*it0).x<<", "<<(*it0).y<<", "<<(*it0).th<<") and ";
+        std::cout<<count+1<<" ("<<(*it1).x<<", "<<(*it1).y<<", "<<(*it1).th<<")"<<std::endl;
+        std::cout<<"     collision-free dubins path: ";
+        shortestDubinsResult sd = dubinsPath(*it0, *it1, Kmax, obs);
+        if (sd.find_dubins){
+          std::cout<<"yes"<<std::endl;
+          for (auto it = sd.dubinsWPList.begin(); it != sd.dubinsWPList.end(); ++it){
+            path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+          }
         }
+        else {
+          temp.push_back(pt{count,count+1});
+          std::cout<<"no"<<std::endl;
+        }
+        count = count + 1;
       }
-      else std::cout<<"no"<<std::endl;
-      count = count + 1;
+      remove.push_back(temp);
+      temp.clear();
     }
 
     // END OF DUBBINS PATH
