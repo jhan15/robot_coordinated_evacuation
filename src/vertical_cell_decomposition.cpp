@@ -333,14 +333,16 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             // trapezoids
             temp_points1.clear();
             trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
-            if(next_two_seg_same_x && (next_next_segment.b.x != -1) && (next_next_segment.a.x == -1) && extra_search){
-              // cout << "--next next seg is not blocked from top" << endl;
-              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              temp_points1.clear();
-              trapezoids.push_back({curr_segment.a,next_next_vertex,next_next_segment.b,curr_vertex});              
+            if(extra_search){
+              if(next_two_seg_same_x && (next_next_segment.b.x != -1) && (next_next_segment.a.x == -1)){
+                // cout << "--next next seg is not blocked from top" << endl;
+                temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+                temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
+                lines_to_check.push_back(temp_segment);
+                group.push_back(0);
+                temp_points1.clear();
+                trapezoids.push_back({curr_segment.a,next_next_vertex,next_next_segment.b,curr_vertex});              
+              }
             }
           }
           //if the next segment is not blocked from the top
@@ -351,13 +353,15 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
             trapezoids.push_back({curr_segment.a,next_vertex,next_segment.b,curr_vertex});
-            if(next_two_seg_same_x && (next_next_segment.a.x != -1) && (next_next_segment.b.x == -1)  && extra_search){
-              // cout << "--next next seg is not blocked from bottom" << endl;
-              temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              trapezoids.push_back({curr_segment.a,next_next_segment.a,next_next_vertex,curr_vertex});              
+            if(extra_search){
+              if(next_two_seg_same_x && (next_next_segment.a.x != -1) && (next_next_segment.b.x == -1)){
+                // cout << "--next next seg is not blocked from bottom" << endl;
+                temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
+                temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
+                lines_to_check.push_back(temp_segment);
+                group.push_back(0);
+                trapezoids.push_back({curr_segment.a,next_next_segment.a,next_next_vertex,curr_vertex});              
+              }
             }
           }
           else {
@@ -392,12 +396,15 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             lines_to_check.push_back(temp_segment);
             group.push_back(1);
             trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
-            if(next_two_seg_same_x && (next_next_segment.b.x != -1)  && (next_next_segment.a.x == -1) && extra_search){
-              // cout << "--next next seg is not blocked from top" << endl;
-              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              trapezoids.push_back({curr_vertex,next_next_vertex,next_next_segment.b,curr_segment.b});              
+            if(extra_search){
+              if(next_two_seg_same_x && (next_next_segment.b.x != -1)  && (next_next_segment.a.x == -1)){
+                // cout << "--next next seg is not blocked from top" << endl;
+                temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+                temp_segment.b = centroid({next_next_segment.b,next_next_vertex});
+                lines_to_check.push_back(temp_segment);
+                group.push_back(1);
+                trapezoids.push_back({curr_vertex,next_next_vertex,next_next_segment.b,curr_segment.b});              
+              }
             }
           }
           // if next segment is not blocked from the top
@@ -409,13 +416,15 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             group.push_back(1);
             trapezoids.push_back({curr_vertex,next_vertex,next_segment.b,curr_segment.b});
 
-            if(next_two_seg_same_x && (next_next_segment.a.x != -1)  && (next_next_segment.b.x == -1)  && extra_search){
-              // cout << "--next next seg is not blocked from bottom" << endl;
-              temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
-              temp_segment.b = centroid({next_next_segment.a,next_next_vertex}); 
-              lines_to_check.push_back(temp_segment);
-              group.push_back(0);
-              trapezoids.push_back({curr_vertex,next_next_segment.a,next_next_vertex,curr_segment.b});              
+            if(extra_search){
+              if(next_two_seg_same_x && (next_next_segment.a.x != -1)  && (next_next_segment.b.x == -1)){
+                // cout << "--next next seg is not blocked from bottom" << endl;
+                temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
+                temp_segment.b = centroid({next_next_segment.a,next_next_vertex});
+                lines_to_check.push_back(temp_segment);
+                group.push_back(1);
+                trapezoids.push_back({curr_vertex,next_next_segment.a,next_next_vertex,curr_segment.b});              
+              }
             }
           }
           else {

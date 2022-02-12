@@ -84,8 +84,6 @@ namespace student {
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,plot);
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 
-    //Basem what is this exactly doing and why do we do it twice?
-    inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
     inflated_obstacle_list =  trim_obstacles(inflated_obstacle_list,inflated_borders, plot);
     inflated_obstacle_list =  merge_obstacles (inflated_obstacle_list, plot);
 
