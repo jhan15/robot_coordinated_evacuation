@@ -1424,7 +1424,22 @@ std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<rob
         check_intersection = {1, 1, 1};
     }
     
-    cout << "Pushing from 10" << endl;
+    if ((path_lengths[0] == path_lengths[1]) && (path_lengths[1] == path_lengths[2])){
+        cout << "Pushing from 10" << endl;
+        final_paths[0].push_back(initial_paths[0][initial_paths[0].size()-2]);
+        final_paths[0].push_back(initial_paths[0][initial_paths[0].size()-2]);
+        final_paths[1].push_back(initial_paths[1][initial_paths[1].size()-2]);
+    }
+    else if ((path_lengths[0] == path_lengths[1]) || (path_lengths[0] == path_lengths[2])){
+        cout << "Pushing from 11" << endl;        
+        final_paths[0].push_back(initial_paths[0][initial_paths[0].size()-2]);
+    }
+    else if (path_lengths[1] == path_lengths[2]){
+        cout << "Pushing from 12" << endl;
+        final_paths[1].push_back(initial_paths[1][initial_paths[1].size()-2]);
+    }
+
+    cout << "Pushing from 13" << endl;
     final_paths[0].push_back(initial_paths[0][initial_paths[0].size()-1]);
     final_paths[1].push_back(initial_paths[1][initial_paths[1].size()-1]);
     final_paths[2].push_back(initial_paths[2][initial_paths[2].size()-1]);
