@@ -25,11 +25,9 @@ std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<rob
     path_lengths.push_back(initial_paths[2].size());
 
     //length of the longest path to control the number of iterations through the checker loop
-    int max_length = max(path_lengths[0], max(path_lengths[1], path_lengths[2]));
+    int max_length;
 
-    //DEBUG prints
     cout << "Path lengths: " << path_lengths[0] << " " << path_lengths[1] << " " << path_lengths[2] << endl;
-    cout << "Max path length: " << max_length << endl;
 
     //adding the initial points to the final paths
     final_paths[0].push_back(initial_paths[0][0]);
@@ -44,10 +42,12 @@ std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<rob
     POINT temp_point_2;
     std::vector<POINT> intersection_point = {{}, {}, {}};
     std::vector<int> check_intersection = {1, 1, 1};
-    std::vector<int> stalled = {0, 0, 0};
     std::vector<int> added = {0, 0, 0};
 
+    max_length = max(path_lengths[0], max(path_lengths[1], path_lengths[2]));
+
     for(int point = 0; point < max_length - 2; point ++){
+        
         if(point < path_lengths[0] - 2) {
             temp_point_1.x = initial_paths[0][point-added[0]].x; 
             temp_point_1.y = initial_paths[0][point-added[0]].y;
@@ -111,62 +111,89 @@ std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<rob
         cout << "Check intersections " << check_intersection[0] << " " << check_intersection[1] << " " << check_intersection[2] << endl; 
         cout << "Intersection points {" << intersection_point[0].x << ", " << intersection_point[0].y << "}, {" << intersection_point[1].x << ", " << intersection_point[1].y << "}, {"<< intersection_point[2].x << ", " << intersection_point[2].y << "}"<< endl; 
 
-        if(check_intersection[0] && check_intersection[1] && intersection_point[0].x != -1){
-            if(path_lengths[0] > path_lengths[1]) {
+        if(check_intersection[0] && check_intersection[1] && check_intersection[2] &&
+            intersection_point[0].x != -1 && intersection_point[0].x != -1 && intersection_point[0].x != -1){
+            if(path_lengths[0] == max_length) {
                 final_paths[0].push_back(initial_paths[0][point+1-added[0]]);
                 final_paths[1].push_back(initial_paths[1][point-added[1]]);
                 path_lengths[1] += 1;
-                added[1] += 1;
-                stalled[1] = 1;
-                cout << "Pushing from 4" << endl;
-            }
-            else {
-                final_paths[1].push_back(initial_paths[1][point+1-added[1]]);
-                final_paths[0].push_back(initial_paths[0][point-added[0]]);
-                path_lengths[0] += 1;
-                added[0] += 1;
-                stalled[0] = 1;
-                cout << "Pushing from 5" << endl;              
-            }
-        }
-        if(check_intersection[1] && check_intersection[2] && intersection_point[1].x != -1){
-            if(stalled[1]);
-            else if(path_lengths[1] > path_lengths[2]) {
-                final_paths[1].push_back(initial_paths[1][point+1-added[1]]);
+                added[1] += 1;                
                 final_paths[2].push_back(initial_paths[2][point-added[2]]);
                 path_lengths[2] += 1;
                 added[2] += 1;
-                stalled[2] = 1;
-                cout << "Pushing from 6" << endl;            
+            }
+            else if(path_lengths[1] == max_length) {
+                final_paths[1].push_back(initial_paths[1][point+1-added[1]]);
+                final_paths[0].push_back(initial_paths[0][point-added[0]]);
+                path_lengths[0] += 1;
+                added[0] += 1;                
+                final_paths[2].push_back(initial_paths[2][point-added[2]]);
+                path_lengths[2] += 1;
+                added[2] += 1;
             }
             else {
-                final_paths[2].push_back(initial_paths[2][point+1-added[2]]);
-                final_paths[1].push_back(initial_paths[1][point-added[1]]);
-                path_lengths[1] += 1;
-                added[1] += 1;
-                stalled[1] = 1;                
-                cout << "Pushing from 7" << endl;
-            }
-        }
-        if(check_intersection[0] && check_intersection[2] && intersection_point[2].x != -1){
-            if(stalled[0] || stalled[2]);
-            if(path_lengths[2] > path_lengths[0]) {
                 final_paths[2].push_back(initial_paths[2][point+1-added[2]]);
                 final_paths[0].push_back(initial_paths[0][point-added[0]]);
                 path_lengths[0] += 1;
-                added[0] += 1;
-                cout << "Pushing from 8" << endl;
+                added[0] += 1;                
+                final_paths[1].push_back(initial_paths[1][point-added[1]]);
+                path_lengths[1] += 1;
+                added[1] += 1;
+            }    
+        }
+
+        else {
+            if(check_intersection[0] && check_intersection[1] && intersection_point[0].x != -1){
+                if(path_lengths[0] > path_lengths[1]) {
+                    final_paths[0].push_back(initial_paths[0][point+1-added[0]]);
+                    final_paths[1].push_back(initial_paths[1][point-added[1]]);
+                    path_lengths[1] += 1;
+                    added[1] += 1;
+                    cout << "Pushing from 4" << endl;
+                }
+                else {
+                    final_paths[1].push_back(initial_paths[1][point+1-added[1]]);
+                    final_paths[0].push_back(initial_paths[0][point-added[0]]);
+                    path_lengths[0] += 1;
+                    added[0] += 1;
+                    cout << "Pushing from 5" << endl;              
+                }
             }
-            else {
-                final_paths[0].push_back(initial_paths[0][point+1-added[0]]);
-                final_paths[2].push_back(initial_paths[2][point-added[2]]);
-                path_lengths[2] += 1;
-                added[2] += 1;                
-                cout << "Pushing from 9" << endl;
+            if(check_intersection[1] && check_intersection[2] && intersection_point[1].x != -1){
+                if(path_lengths[1] > path_lengths[2]) {
+                    final_paths[1].push_back(initial_paths[1][point+1-added[1]]);
+                    final_paths[2].push_back(initial_paths[2][point-added[2]]);
+                    path_lengths[2] += 1;
+                    added[2] += 1;
+                    cout << "Pushing from 6" << endl;            
+                }
+                else {
+                    final_paths[2].push_back(initial_paths[2][point+1-added[2]]);
+                    final_paths[1].push_back(initial_paths[1][point-added[1]]);
+                    path_lengths[1] += 1;
+                    added[1] += 1;
+                    cout << "Pushing from 7" << endl;
+                }
+            }
+            if(check_intersection[0] && check_intersection[2] && intersection_point[2].x != -1){
+                if(path_lengths[2] > path_lengths[0]) {
+                    final_paths[2].push_back(initial_paths[2][point+1-added[2]]);
+                    final_paths[0].push_back(initial_paths[0][point-added[0]]);
+                    path_lengths[0] += 1;
+                    added[0] += 1;
+                    cout << "Pushing from 8" << endl;
+                }
+                else {
+                    final_paths[0].push_back(initial_paths[0][point+1-added[0]]);
+                    final_paths[2].push_back(initial_paths[2][point-added[2]]);
+                    path_lengths[2] += 1;
+                    added[2] += 1;                
+                    cout << "Pushing from 9" << endl;
+                }
             }
         }
-        stalled = {0, 0, 0};
         check_intersection = {1, 1, 1};
+        max_length = max(path_lengths[0], max(path_lengths[1], path_lengths[2]));
     }
     
     if ((path_lengths[0] == path_lengths[1]) && (path_lengths[1] == path_lengths[2])){
