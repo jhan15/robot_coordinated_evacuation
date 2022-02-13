@@ -12,7 +12,7 @@
 #include "collision.hpp"
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
-
+#include "motion_planning.hpp"
 
 int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
 
