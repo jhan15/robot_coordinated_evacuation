@@ -49,6 +49,7 @@ std::vector<int> bfs(std::vector< std::vector<int>> graph, int source, int targe
 std::vector<std::vector<int>> optimize_graph(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles);
 std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vector<POINT> coordinates);
 void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std::vector<POINT> end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points);    
+std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<robotPos>> initial_paths);
 
 // bool points_successive (POINT a, POINT b, std::vector<POINT> obstacle);
 // int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles);

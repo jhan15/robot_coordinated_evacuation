@@ -214,7 +214,7 @@ namespace student {
 
       //changing the path index to actual points for dubins
       path_points[robot] = index_to_coordinates(optimized_path[robot], new_graph_vertices);
-
+      
       //printing and plotting the results
       cout << "RESULTS FOR ROBOT " << robot << endl;
       print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices,
@@ -223,6 +223,57 @@ namespace student {
                new_graph_vertices, optimized_path[robot], my_path[robot]); 
     }    
 
+    //Remove from here down after testing the coordinat_motion function
+    std::vector<std::vector<robotPos>> test_points = {{}, {}, {}};
+    robotPos temp_point;
+    temp_point.x = 1;
+    temp_point.y = 6;
+    test_points[0].push_back(temp_point);
+    temp_point.x = 9;
+    temp_point.y = 6;
+    test_points[0].push_back(temp_point);
+    temp_point.x = 10;
+    temp_point.y = 6;
+    test_points[0].push_back(temp_point);
+    temp_point.x = 3;
+    temp_point.y = 4;
+    test_points[1].push_back(temp_point);
+    temp_point.x = 4;
+    temp_point.y = 3;
+    test_points[1].push_back(temp_point);
+    temp_point.x = 6;
+    temp_point.y = 1;
+    test_points[1].push_back(temp_point);
+    temp_point.x = 9;
+    temp_point.y = 5;
+    test_points[1].push_back(temp_point);
+    temp_point.x = 10;
+    temp_point.y = 6;
+    test_points[1].push_back(temp_point);
+    temp_point.x = 2;
+    temp_point.y = 2;
+    test_points[2].push_back(temp_point);
+    temp_point.x = 4;
+    temp_point.y = 1;
+    test_points[2].push_back(temp_point);
+    temp_point.x = 6;
+    temp_point.y = 2;
+    test_points[2].push_back(temp_point);
+    temp_point.x = 10;
+    temp_point.y = 6;
+    test_points[2].push_back(temp_point);
+
+    for(int i = 0; i < 3; i++){
+      for(int j = 0; j < test_points[i].size(); j++){
+        cout << "{" << test_points[i][j].x << ", " << test_points[i][j].y << "}, ";
+      }
+      cout << endl;
+    }
+
+    //end of removal; change test_points to path_points below
+
+    //adjust the paths for collision free motion
+    test_points = coordinate_motion(test_points);
 
     // DUBINS
     // Compute the orientations of path_points
