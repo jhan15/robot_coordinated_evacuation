@@ -25,17 +25,40 @@ void writeSvg_single(polygon const& g, std::string fname) {
     mapper.map(g, "fill-opacity:0.5;fill:rgb(153,0,0);stroke:rgb(200,0,0);stroke-width:2");
 }
 
+Polygon simplify_poly (Polygon poly, float tol){
+    Polygon temp_obj;
+    std::vector<point_xy> temp_points;
+    boost::geometry::model::linestring<point_xy> line;
+    boost::geometry::model::linestring<point_xy> simplified;
+    for(Point curr_point : poly){
+            line+= point_xy(curr_point.x,curr_point.y);
+        }
+    // cout << "line: " << boost::geometry::dsv(line) << endl;
+    boost::geometry::simplify(line, simplified, tol);
+    // cout << "simplified: " << boost::geometry::dsv(simplified) << endl;
+    for (point_xy point : simplified){
+        float x = point.x();
+        float y = point.y();
+        temp_obj.push_back({x,y});
+        // cout << "temp obj:" << temp_obj[temp_obj.size()-1].x << " , "<<temp_obj[temp_obj.size()-1].y << endl;
+    }   
+    return temp_obj;
+}
 
 /*
 takes the obsticales in the arena and inflates them to account for the size of the robot
 outputs the inflated obsticales
 */
-std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, float inflate_value, cv::Mat plot){
+std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list, float inflate_value,bool simplify, cv::Mat plot){
     std::vector<Polygon> new_obsticale_list = obstacle_list;
     std::vector<Polygon> inflated_obsticale_list;
     int px, py;
 
-    for (auto &obstacle : obstacle_list) {
+    for (Polygon obstacle : obstacle_list) {
+        if (simplify){
+            obstacle = simplify_poly(obstacle,0.02);
+        }
+
         ClipperLib::Path clib_obsticale;
         ClipperLib::Paths clib_merged_obs;
 
@@ -47,7 +70,9 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
 
         // applying the offset
         ClipperLib::ClipperOffset co;
-        co.AddPath(clib_obsticale, ClipperLib::jtSquare, ClipperLib::etClosedPolygon);
+        co.MiterLimit = 230;
+
+        co.AddPath(clib_obsticale, ClipperLib::jtMiter, ClipperLib::etClosedPolygon);
         co.Execute(clib_merged_obs, inflate_value);
         // printf("subject size = %d\n",(int)clib_obsticale.size());
         // print results
@@ -443,7 +468,7 @@ void Print_Vector(vector<int> Vec)
 }
 
 
-std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,cv::Mat plot){
+std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,bool simplify,cv::Mat plot){
     std::vector<Polygon> merged_obstacles;
     std::vector<std::vector<int> > obstacle_overlap_tab(obstacle_list.size());
     std::vector<point_xy> temp_points;
@@ -632,6 +657,10 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
             temp_obj.push_back({x,y});
         }
         temp_obj.pop_back();
+        if(simplify){
+            temp_obj = simplify_poly(temp_obj,0.03);
+        }
+        
         merged_obstacles.push_back(temp_obj);
     }
     
