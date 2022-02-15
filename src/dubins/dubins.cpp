@@ -770,7 +770,7 @@ bool checkTwoDubins(dubinsCurve c1, dubinsCurve c2, float Kmax)
 // Get waypoints of arc
 void getArcWaypoints(dubinsArc arc, vector<dubinsWaypoint>& dubinsWPList)
 {
-    float ds = 0.05;
+    float ds = 0.02;
     float s = dubinsWPList.empty() ? 0.0 : dubinsWPList.back().s;
     for (float l=0; l<arc.L; l+=ds)
     {

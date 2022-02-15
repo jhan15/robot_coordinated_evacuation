@@ -1177,23 +1177,23 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
   optimized_path.push_back(my_path[0]);
   for(int i = 0;i<my_path.size()-1;i++){
     gamma_i = 1;
-    std::cout << "i at beginning: " << i << std::endl;
+    // std::cout << "i at beginning: " << i << std::endl;
     best_distance = INFINITY;
     next_point = i+1;
     best_point = my_path[next_point];
     if(i<=my_path.size()-look_ahead-1){cap = look_ahead;}else{cap= my_path.size()-1-i;}
-    std::cout << "cap is ::: " << cap << std::endl;
+    // std::cout << "cap is ::: " << cap << std::endl;
     for(int j=1;j<=cap;j++){
-      std::cout << j+i << " , " << my_path.size() << std::endl;
+      // std::cout << j+i << " , " << my_path.size() << std::endl;
       break_loop= false;
-      std::cout << "point " << i <<  " " << graph_vertices[my_path[i]].x << " , " << graph_vertices[my_path[i]].y << "point " << j+i <<  " " << graph_vertices[my_path[i+j]].x << " , " << graph_vertices[my_path[i+j]].y << std::endl;
+      // std::cout << "point " << i <<  " " << graph_vertices[my_path[i]].x << " , " << graph_vertices[my_path[i]].y << "point " << j+i <<  " " << graph_vertices[my_path[i+j]].x << " , " << graph_vertices[my_path[i+j]].y << std::endl;
       distance = sqrt(pow(graph_vertices[my_path[i]].x - graph_vertices[my_path[i+j]].x,2) + pow(graph_vertices[my_path[i]].y - graph_vertices[my_path[i+j]].y,2));
       distance = gamma_i * distance ;
       angle = atan2(graph_vertices[my_path[i]].y-graph_vertices[my_path[i+j]].y,graph_vertices[my_path[i]].x-graph_vertices[my_path[i+j]].x)*180/pi;
-      std::cout << "angle" << angle<< std::endl;
-      std::cout << "distance: " << distance << " best dissstance : " << best_distance  << " best pnt("<< next_point << std::endl;
+      // std::cout << "angle" << angle<< std::endl;
+      // std::cout << "distance: " << distance << " best dissstance : " << best_distance  << " best pnt("<< next_point << std::endl;
       if(distance <= best_distance){
-        std::cout << "less distance detected -- checking collision" << std::endl;
+        // std::cout << "less distance detected -- checking collision" << std::endl;
         temp_path.a = {graph_vertices[my_path[i]].x, graph_vertices[my_path[i]].y};
         temp_path.b = {graph_vertices[my_path[i+j]].x, graph_vertices[my_path[i+j]].y};        
         for(int obs = 0 ; obs< obstacles.size();obs++){
@@ -1203,7 +1203,7 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
             inter_result = intersection_trial(temp_obs,temp_path);
             if(inter_result.x !=-1){
               break_loop = true;
-              std::cout << "COLLISION DETECTED" <<std::endl;
+              // std::cout << "COLLISION DETECTED" <<std::endl;
               break;
             }
           }
@@ -1215,7 +1215,7 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
           continue;
         }
         else{
-          std::cout << " NO COLLISION DETECTED" << std::endl;
+          // std::cout << " NO COLLISION DETECTED" << std::endl;
           best_distance = distance;
           best_point = my_path[j+i];
           next_point = i+j;
@@ -1230,10 +1230,13 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
     // cv::Point2f centerCircle(opt_points[opt_points.size()-1].x*enlarge,opt_points[opt_points.size()-1].y*enlarge);
     // std::string text = std::to_string(next_po);
     // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-    std::cout << "adding pt #: (" << next_point << ")" << graph_vertices[my_path[my_path.size()-1]].x << " , " << graph_vertices[my_path[my_path.size()-1]].y << std::endl;
-    std::cout << "i at end: " << next_point <<  "========================" << std::endl;
+    // std::cout << "adding pt #: (" << next_point << ")" << graph_vertices[my_path[my_path.size()-1]].x << " , " << graph_vertices[my_path[my_path.size()-1]].y << std::endl;
+    // std::cout << "i at end: " << next_point <<  "========================" << std::endl;
   }
-
+  std::cout<< "Optimized path with look ahead points: total points "<< optimized_path.size() << std::endl;
+  for(int i = 0 ; i<optimized_path.size();i++){
+    std::cout << "Point # " << i << " ( " << graph_vertices[optimized_path[i]].x << " , " << graph_vertices[optimized_path[i]].y << " )" << endl;
+  }
   return optimized_path;
 }
 
@@ -1242,7 +1245,7 @@ std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vec
     robotPos temp_pt;
     for (unsigned i=0; i<index_path.size(); i++) {
         temp_pt = {coordinates[index_path[i]].x, coordinates[index_path[i]].y,-1};
-        //cout << "optimized point: (x: " << temp_pt.x << " , y: "<<  temp_pt.y << " , theta: " << temp_pt.th << " ) " << endl;
+        // cout << "optimized point: (x: " << temp_pt.x << " , y: "<<  temp_pt.y << " , theta: " << temp_pt.th << " ) " << endl;
         path_points.push_back(temp_pt);
     }
     return path_points;

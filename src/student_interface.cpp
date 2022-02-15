@@ -72,6 +72,11 @@ namespace student {
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
 
+    cout << "printing points from path " << endl;
+    for (int i = 0 ; i < path[0].size();i++){
+      cout << path[0].points[i].x << " , " << path[0].points[i].x << endl;
+    }
+    
     //initialising the plot
     int l = 1000;        
     cv::Mat plot(l - 300,l, CV_8UC3, cv::Scalar(255,255,255));
@@ -80,7 +85,7 @@ namespace student {
     //OBSTACLES PREPROCESSING
     
     // inflating the obsticales and borders of the arena
-    float inflate_value = 30;
+    float inflate_value = 35;
     bool simplify = true;
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,simplify,plot);
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
@@ -116,13 +121,17 @@ namespace student {
     std::vector<POINT> gate;
     //end point is the center of the gate 
     std::vector<POINT> end_point;
+    
     for (int i = 0; i < gate_list.size(); i++) {
       for (const auto &position : gate_list[i]) {
         gate.push_back({position.x,position.y});
+
       }
       end_point.push_back(centroid(gate));
       gate.clear();
     }
+
+    end_point[0] = {end_point[0].x,end_point[0].y-0.04};
 
     //the total number of vertices of all obstacles together
     int vertices_num = 0;
@@ -191,7 +200,7 @@ namespace student {
 
     // parameters for the optimize look ahead
     // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
-    int look_ahead = 10; // how many points ahead current point is allowed to look
+    int look_ahead = INFINITY; // how many points ahead current point is allowed to look
     float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
 
     // option #1: my_path
@@ -238,7 +247,6 @@ namespace student {
 
       //calculating the optimized path using breadth first search
       optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
-
       optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
       //changing the path index to actual points for dubins
       path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
@@ -342,7 +350,7 @@ namespace student {
     }
     obs.push_back(ob);
 
-    float Kmax = 12.0;
+    float Kmax = 25.0;
 
     // Compute the collision-free dubins path between two points
     // Store point-pairs w/o collision-free dubins
@@ -378,15 +386,17 @@ namespace student {
       curves.push_back(tc);
       tc.clear();
     }
-
-    bool aac = checkTwoDubins(curves[0][2], curves[1][1], Kmax);
-    std::cout<<"dubins curves collision: "<<aac<<std::endl;
+    // bool aac = checkTwoDubins(curves[0][2], curves[1][1], Kmax);
+    // std::cout<<"dubins curves collision: "<<aac<<std::endl;
+    plot_dubins(plot,path,robots_number);
 
     // END OF DUBBINS PATH
 
+
+
     //close the plot on key press
-    cv::waitKey(0);    
-    cv::destroyAllWindows();
+    // cv::waitKey(0);    
+    // cv::destroyAllWindows();
 
     return true;
   }

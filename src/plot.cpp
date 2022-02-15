@@ -152,5 +152,21 @@ void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, s
     //   cv::line(plot, cv::Point2f(new_graph_vertices[optimized_path[i-1]].x*enlarge,new_graph_vertices[optimized_path[i-1]].y*enlarge), cv::Point2f(new_graph_vertices[optimized_path[i]].x*enlarge,new_graph_vertices[optimized_path[i]].y*enlarge), cv::Scalar(0,20,255), 2);
     // }
     cv::imshow("Clipper", plot);
+    cv::waitKey(0); 
 
+}
+
+void plot_dubins (cv::Mat plot,std::vector<Path> path, int robots_number){
+  int enlarge = 600;
+  for(int robot = 0; robot < robots_number; robot ++) {
+    int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    int output3 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    auto color_rand = cv::Scalar(output1,output2,output3);
+    for (unsigned i=1; i<path[robot].size(); i++) {
+    cv::line(plot, cv::Point2f(path[robot].points[i-1].x*enlarge,path[robot].points[i-1].y*enlarge), cv::Point2f(path[robot].points[i].x*enlarge,path[robot].points[i].y*enlarge), color_rand, 2);
+    }
+    cv::imshow("Clipper", plot);
+    cv::waitKey(0); 
+  }
 }
