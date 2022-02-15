@@ -1156,6 +1156,86 @@ std::vector<std::vector<int>>  optimize_graph(std::vector<int> my_path, std::vec
     return optimized_graph;
 }
 
+std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, int look_ahead, float gamma){
+  SEGMENT temp_path;
+  SEGMENT temp_obs;
+  float distance= 0.0 ;
+  float best_distance;
+  int best_point;
+  int next_point;
+  bool break_loop;
+  int cap = 0;
+  float gamma_i;
+  float angle;
+  POINT inter_result;
+  const double pi = boost::math::constants::pi<double>();
+
+  // to guarentee that look ahead won't exceed the path length
+  if(look_ahead>my_path.size()-1){look_ahead=my_path.size()-1;}
+
+  std::vector<int> optimized_path;
+  optimized_path.push_back(my_path[0]);
+  for(int i = 0;i<my_path.size()-1;i++){
+    gamma_i = 1;
+    std::cout << "i at beginning: " << i << std::endl;
+    best_distance = INFINITY;
+    next_point = i+1;
+    best_point = my_path[next_point];
+    if(i<=my_path.size()-look_ahead-1){cap = look_ahead;}else{cap= my_path.size()-1-i;}
+    std::cout << "cap is ::: " << cap << std::endl;
+    for(int j=1;j<=cap;j++){
+      std::cout << j+i << " , " << my_path.size() << std::endl;
+      break_loop= false;
+      std::cout << "point " << i <<  " " << graph_vertices[my_path[i]].x << " , " << graph_vertices[my_path[i]].y << "point " << j+i <<  " " << graph_vertices[my_path[i+j]].x << " , " << graph_vertices[my_path[i+j]].y << std::endl;
+      distance = sqrt(pow(graph_vertices[my_path[i]].x - graph_vertices[my_path[i+j]].x,2) + pow(graph_vertices[my_path[i]].y - graph_vertices[my_path[i+j]].y,2));
+      distance = gamma_i * distance ;
+      angle = atan2(graph_vertices[my_path[i]].y-graph_vertices[my_path[i+j]].y,graph_vertices[my_path[i]].x-graph_vertices[my_path[i+j]].x)*180/pi;
+      std::cout << "angle" << angle<< std::endl;
+      std::cout << "distance: " << distance << " best dissstance : " << best_distance  << " best pnt("<< next_point << std::endl;
+      if(distance <= best_distance){
+        std::cout << "less distance detected -- checking collision" << std::endl;
+        temp_path.a = {graph_vertices[my_path[i]].x, graph_vertices[my_path[i]].y};
+        temp_path.b = {graph_vertices[my_path[i+j]].x, graph_vertices[my_path[i+j]].y};        
+        for(int obs = 0 ; obs< obstacles.size();obs++){
+          for(int pt = 0 ; pt< obstacles[obs].size()-1;pt++){
+            temp_obs.a = {obstacles[obs][pt].x,obstacles[obs][pt].y};
+            temp_obs.b = {obstacles[obs][pt+1].x,obstacles[obs][pt+1].y};
+            inter_result = intersection_trial(temp_obs,temp_path);
+            if(inter_result.x !=-1){
+              break_loop = true;
+              std::cout << "COLLISION DETECTED" <<std::endl;
+              break;
+            }
+          }
+          if(break_loop){
+            break;
+          }
+        }
+        if(break_loop){
+          continue;
+        }
+        else{
+          std::cout << " NO COLLISION DETECTED" << std::endl;
+          best_distance = distance;
+          best_point = my_path[j+i];
+          next_point = i+j;
+        }      
+      }
+      gamma_i*=gamma;
+    }
+    
+    i = next_point-1;
+    
+    optimized_path.push_back(my_path[next_point]);
+    // cv::Point2f centerCircle(opt_points[opt_points.size()-1].x*enlarge,opt_points[opt_points.size()-1].y*enlarge);
+    // std::string text = std::to_string(next_po);
+    // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
+    std::cout << "adding pt #: (" << next_point << ")" << graph_vertices[my_path[my_path.size()-1]].x << " , " << graph_vertices[my_path[my_path.size()-1]].y << std::endl;
+    std::cout << "i at end: " << next_point <<  "========================" << std::endl;
+  }
+
+  return optimized_path;
+}
 
 std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vector<POINT> coordinates) {
     std::vector<robotPos> path_points;

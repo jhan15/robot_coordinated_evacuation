@@ -176,19 +176,46 @@ namespace student {
     //vectors to keep the paths for all robots
     std::vector<std::vector<int>> my_path;
     std::vector<std::vector<int>> optimized_path;
+    std::vector<std::vector<int>> optimized_path_look_ahead;
     std::vector<std::vector<robotPos>> path_points;
+    std::vector<POINT> graph_edges;
+    std::vector<POINT> graph_vertices;
+    std::vector<POINT> new_graph_vertices;
     //initializing them empty
     my_path = {{}, {}, {}};
     optimized_path = {{}, {}, {}};
+    optimized_path_look_ahead = {{}, {}, {}}; 
     path_points = {{}, {}, {}};
-    
+    std::vector<std::vector<int>> *path_option;
+    std::vector<POINT> *graph_option = &graph_vertices;
+
+    // parameters for the optimize look ahead
+    // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
+    int look_ahead = 10; // how many points ahead current point is allowed to look
+    float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
+
+    // option #1: my_path
+    // option #2: optimized_path
+    // option #3: optimized_path_look_ahead
+    int path_choice = 3;
+
+    switch(path_choice){
+      case 1:
+        path_option = &my_path;
+        graph_option = &graph_vertices;
+        break;
+      case 2:
+        path_option = &optimized_path;
+        graph_option = &new_graph_vertices;
+        break;
+      case 3:
+        path_option = &optimized_path_look_ahead;
+        graph_option = &graph_vertices;
+        break; 
+    }
     //the graph is adjusted for each point by adding its starting point
     //then a path is calculated for each robot
     for(int robot = 0; robot < robots_number; robot ++) {
-      //these are changed per robot
-      std::vector<POINT> graph_edges;
-      std::vector<POINT> graph_vertices; 
-      
       //adding the start and end point for each robot into the graph
       tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_point, obstacles);
 
@@ -200,7 +227,6 @@ namespace student {
       my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
 
       //separating only the graph vertices which belong to the path for optimization purposes
-      std::vector<POINT> new_graph_vertices;
       new_graph_vertices.clear();
       for(int i = 0 ; i < my_path[robot].size(); i++){
         new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
@@ -213,16 +239,15 @@ namespace student {
       //calculating the optimized path using breadth first search
       optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
 
+      optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
       //changing the path index to actual points for dubins
-      path_points[robot] = index_to_coordinates(optimized_path[robot], new_graph_vertices);
-      //path_points[robot] = index_to_coordinates(my_path[robot], graph_vertices);
-      
+      path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
       //printing and plotting the results
       cout << "RESULTS FOR ROBOT " << robot << endl;
       print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices,
                  optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
-      plot_map(plot, sorted_vertices, cells, start_point, end_point, graph, graph_vertices,
-               new_graph_vertices, optimized_path[robot], my_path[robot]); 
+      plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_point, graph, graph_vertices,my_path[robot],*graph_option,
+               (*path_option)[robot]); 
     }    
 
     //Remove from here down after testing the coordinat_motion function
