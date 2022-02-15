@@ -215,6 +215,7 @@ namespace student {
 
       //changing the path index to actual points for dubins
       path_points[robot] = index_to_coordinates(optimized_path[robot], new_graph_vertices);
+      //path_points[robot] = index_to_coordinates(my_path[robot], graph_vertices);
       
       //printing and plotting the results
       cout << "RESULTS FOR ROBOT " << robot << endl;
@@ -225,64 +226,64 @@ namespace student {
     }    
 
     //Remove from here down after testing the coordinat_motion function
-    std::vector<std::vector<robotPos>> test_points = {{}, {}, {}};
-    robotPos temp_point;
-    temp_point.x = 1;
-    temp_point.y = 5;
-    test_points[0].push_back(temp_point);
-    temp_point.x = 8;
-    temp_point.y = 5;
-    test_points[0].push_back(temp_point);
-/*    temp_point.x = 5;
-    temp_point.y = 1;
-    test_points[0].push_back(temp_point);
-    temp_point.x = 9;
-    temp_point.y = 8;
-    test_points[0].push_back(temp_point);
-*/
-    temp_point.x = 1;
-    temp_point.y = 3;
-    test_points[1].push_back(temp_point);
-    temp_point.x = 3;
-    temp_point.y = 3;
-    test_points[1].push_back(temp_point);
-    temp_point.x = 5;
-    temp_point.y = 1;
-    test_points[1].push_back(temp_point);
-    temp_point.x = 9;
-    temp_point.y = 5;
-    test_points[1].push_back(temp_point);
-/*    temp_point.x = 9;
-    temp_point.y = 8;
-    test_points[1].push_back(temp_point);
-*/
-    temp_point.x = 1;
-    temp_point.y = 1;
-    test_points[2].push_back(temp_point);
-    temp_point.x = 3;
-    temp_point.y = 2;
-    test_points[2].push_back(temp_point);
-    temp_point.x = 5;
-    temp_point.y = 2;
-    test_points[2].push_back(temp_point);
-    temp_point.x = 7;
-    temp_point.y = 3;
-    test_points[2].push_back(temp_point);
-    temp_point.x = 9;
-    temp_point.y = 4;
-    test_points[2].push_back(temp_point);
+//     std::vector<std::vector<robotPos>> test_points = {{}, {}, {}};
+//     robotPos temp_point;
+//     temp_point.x = 1;
+//     temp_point.y = 5;
+//     test_points[0].push_back(temp_point);
+//     temp_point.x = 8;
+//     temp_point.y = 5;
+//     test_points[0].push_back(temp_point);
+// /*    temp_point.x = 5;
+//     temp_point.y = 1;
+//     test_points[0].push_back(temp_point);
+//     temp_point.x = 9;
+//     temp_point.y = 8;
+//     test_points[0].push_back(temp_point);
+// */
+//     temp_point.x = 1;
+//     temp_point.y = 3;
+//     test_points[1].push_back(temp_point);
+//     temp_point.x = 3;
+//     temp_point.y = 3;
+//     test_points[1].push_back(temp_point);
+//     temp_point.x = 5;
+//     temp_point.y = 1;
+//     test_points[1].push_back(temp_point);
+//     temp_point.x = 9;
+//     temp_point.y = 5;
+//     test_points[1].push_back(temp_point);
+// /*    temp_point.x = 9;
+//     temp_point.y = 8;
+//     test_points[1].push_back(temp_point);
+// */
+//     temp_point.x = 1;
+//     temp_point.y = 1;
+//     test_points[2].push_back(temp_point);
+//     temp_point.x = 3;
+//     temp_point.y = 2;
+//     test_points[2].push_back(temp_point);
+//     temp_point.x = 5;
+//     temp_point.y = 2;
+//     test_points[2].push_back(temp_point);
+//     temp_point.x = 7;
+//     temp_point.y = 3;
+//     test_points[2].push_back(temp_point);
+//     temp_point.x = 9;
+//     temp_point.y = 4;
+//     test_points[2].push_back(temp_point);
 
-    for(int i = 0; i < 3; i++){
-      for(int j = 0; j < test_points[i].size(); j++){
-        cout << "{" << test_points[i][j].x << ", " << test_points[i][j].y << "}, ";
-      }
-      cout << endl;
-    }
+//     for(int i = 0; i < 3; i++){
+//       for(int j = 0; j < test_points[i].size(); j++){
+//         cout << "{" << test_points[i][j].x << ", " << test_points[i][j].y << "}, ";
+//       }
+//       cout << endl;
+//     }
 
-    //end of removal; change test_points to path_points below
+//     //end of removal; change test_points to path_points below
 
-    //adjust the paths for collision free motion
-    test_points = coordinate_motion(test_points);
+//     //adjust the paths for collision free motion
+//     test_points = coordinate_motion(test_points);
 
     // DUBINS
     // Compute the orientations of path_points
@@ -322,6 +323,8 @@ namespace student {
     // Store point-pairs w/o collision-free dubins
     std::vector<std::vector<pt>> remove;
     std::vector<pt> temp;
+    std::vector<std::vector<dubinsCurve>> curves;
+    std::vector<dubinsCurve> tc;
     for(int robot = 0; robot < robots_number; robot ++) {
       float count = 0;
       std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
@@ -334,6 +337,7 @@ namespace student {
         shortestDubinsResult sd = dubinsPath(*it0, *it1, Kmax, obs);
         if (sd.find_dubins){
           std::cout<<"yes"<<std::endl;
+          tc.push_back(sd.curve);
           for (auto it = sd.dubinsWPList.begin(); it != sd.dubinsWPList.end(); ++it){
             path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
           }
@@ -346,7 +350,12 @@ namespace student {
       }
       remove.push_back(temp);
       temp.clear();
+      curves.push_back(tc);
+      tc.clear();
     }
+
+    bool aac = checkTwoDubins(curves[0][2], curves[1][1], Kmax);
+    std::cout<<"dubins curves collision: "<<aac<<std::endl;
 
     // END OF DUBBINS PATH
 

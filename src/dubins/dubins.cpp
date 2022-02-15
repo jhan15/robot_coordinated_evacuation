@@ -547,6 +547,89 @@ bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax)
     return false;
 }
 
+bool checkTwoDubins(dubinsCurve c1, dubinsCurve c2, float Kmax)
+{
+    vector<dubinsArc> v1 = {c1.a1, c1.a2, c1.a3};
+    vector<dubinsArc> v2 = {c2.a1, c2.a2, c2.a3};
+    vector<Point2d> line1, line2;
+    double x1, y1, s1, e1;
+    double x2, y2, s2, e2;
+
+    for (auto it0 = v1.begin(); it0 != v1.end(); ++it0){
+        for (auto it1 = v2.begin(); it1 != v2.end(); ++it1){
+            if ((*it0).k == 0 && (*it1).k == 0){
+                line1 = {Point2d((*it0).pos0.x, (*it0).pos0.y), Point2d((*it0).posf.x, (*it0).posf.y)};
+                line2 = {Point2d((*it1).pos0.x, (*it1).pos0.y), Point2d((*it1).posf.x, (*it1).posf.y)};
+                vector<Point2d> pts = line_line_coll(line1, line2);
+                if (pts.size() > 0) return true;
+            }
+            if ((*it0).k == 0 && (*it1).k != 0){
+                line1 = {Point2d((*it0).pos0.x, (*it0).pos0.y), Point2d((*it0).posf.x, (*it0).posf.y)};
+                if ((*it1).k > 0){
+                    x2 = (*it1).pos0.x - sin((*it1).pos0.th)/Kmax;
+                    y2 = (*it1).pos0.y + cos((*it1).pos0.th)/Kmax;
+                    s2 = mod2Pi((*it1).pos0.th - M_PI/2);
+                    e2 = mod2Pi((*it1).posf.th - M_PI/2);
+                }
+                if ((*it1).k < 0){
+                    x2 = (*it1).pos0.x + sin((*it1).pos0.th)/Kmax;
+                    y2 = (*it1).pos0.y - cos((*it1).pos0.th)/Kmax;
+                    s2 = mod2Pi((*it1).posf.th + M_PI/2);
+                    e2 = mod2Pi((*it1).pos0.th + M_PI/2);
+                }
+                bool re = arc_line_coll(x2, y2, 1/Kmax, s2, e2, line1);
+                if (re) return true;
+            }
+            if ((*it0).k != 0 && (*it1).k == 0){
+                line2 = {Point2d((*it1).pos0.x, (*it1).pos0.y), Point2d((*it1).posf.x, (*it1).posf.y)};
+                if ((*it0).k > 0){
+                    x1 = (*it0).pos0.x - sin((*it0).pos0.th)/Kmax;
+                    y1 = (*it0).pos0.y + cos((*it0).pos0.th)/Kmax;
+                    s1 = mod2Pi((*it0).pos0.th - M_PI/2);
+                    e1 = mod2Pi((*it0).posf.th - M_PI/2);
+                }
+                if ((*it0).k < 0){
+                    x1 = (*it0).pos0.x + sin((*it0).pos0.th)/Kmax;
+                    y1 = (*it0).pos0.y - cos((*it0).pos0.th)/Kmax;
+                    s1 = mod2Pi((*it0).posf.th + M_PI/2);
+                    e1 = mod2Pi((*it0).pos0.th + M_PI/2);
+                }
+                bool re = arc_line_coll(x1, y1, 1/Kmax, s1, e1, line2);
+                if (re) return true;
+            }
+            if ((*it0).k != 0 && (*it1).k != 0){
+                if ((*it0).k > 0){
+                    x1 = (*it0).pos0.x - sin((*it0).pos0.th)/Kmax;
+                    y1 = (*it0).pos0.y + cos((*it0).pos0.th)/Kmax;
+                    s1 = mod2Pi((*it0).pos0.th - M_PI/2);
+                    e1 = mod2Pi((*it0).posf.th - M_PI/2);
+                }
+                if ((*it0).k < 0){
+                    x1 = (*it0).pos0.x + sin((*it0).pos0.th)/Kmax;
+                    y1 = (*it0).pos0.y - cos((*it0).pos0.th)/Kmax;
+                    s1 = mod2Pi((*it0).posf.th + M_PI/2);
+                    e1 = mod2Pi((*it0).pos0.th + M_PI/2);
+                }
+                if ((*it1).k > 0){
+                    x2 = (*it1).pos0.x - sin((*it1).pos0.th)/Kmax;
+                    y2 = (*it1).pos0.y + cos((*it1).pos0.th)/Kmax;
+                    s2 = mod2Pi((*it1).pos0.th - M_PI/2);
+                    e2 = mod2Pi((*it1).posf.th - M_PI/2);
+                }
+                if ((*it1).k < 0){
+                    x2 = (*it1).pos0.x + sin((*it1).pos0.th)/Kmax;
+                    y2 = (*it1).pos0.y - cos((*it1).pos0.th)/Kmax;
+                    s2 = mod2Pi((*it1).posf.th + M_PI/2);
+                    e2 = mod2Pi((*it1).pos0.th + M_PI/2);
+                }
+                bool re = arc_arc_coll(x1, y1, 1/Kmax, s1, e1, x2, y2, 1/Kmax, s2, e2);
+                if (re) return true;
+            }
+        }
+    }
+    return false;
+}
+
 // shortestDubinsResult dubinsShortestPath(robotPos pos0, robotPos posf, float Kmax, bool print)
 // {
 //     shortestDubinsResult result;

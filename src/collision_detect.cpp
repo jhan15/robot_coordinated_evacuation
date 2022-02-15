@@ -7,10 +7,6 @@
 
 using namespace cv;
 
-//std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b);
-//std::vector<Point2d> circle_line_coll(double a, double b, int r, std::vector<Point2d> line);
-
-
 
 /*
 function that performs a cross product
@@ -23,6 +19,12 @@ function that performs a dot product
 */
 double dot_prod(Point2d a, Point2d b){
 	return a.x * b.x + a.y * b.y;
+}
+/*
+function to calculate distance between two points
+*/
+double eucl_distance(Point2d a, Point2d b){
+	return sqrt(pow(a.x-b.x,2) + pow(a.y-b.y,2));
 }
 /*
 checks if 2 lines intersect [collide]. returns a vector of points of intersection if any
@@ -164,6 +166,19 @@ std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<
 
 }
 
+bool arc_pass_intersection(float theta, double s, double e){
+	if (s < e && theta >= s && theta <= e)
+	{
+		return true;
+	}
+	if (s > e && !(theta > e && theta < s))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 bool arc_line_coll(double a, double b, double r, double s, double e, std::vector<Point2d> line)
 {
 	bool result = false;
@@ -176,16 +191,55 @@ bool arc_line_coll(double a, double b, double r, double s, double e, std::vector
 		{
 			float theta = atan2((*it).y-b, (*it).x-a);
 			theta = mod2Pi(theta);
-			if (s < e && theta >= s && theta <= e)
-			{
-				result = true;
-			}
-			if (s > e && !(theta > e && theta < s))
-			{
-				result = true;
-			}
+			result = arc_pass_intersection(theta, s, e);
 		}
 	}
 
 	return result;
+}
+
+bool arc_arc_coll(double a1, double b1, double r1, double s1, double e1,
+                  double a2, double b2, double r2, double s2, double e2)
+{
+	double d = eucl_distance(Point2d(a1,b1), Point2d(a2,b2));
+	
+	if (d <= (r1+r2) and d >= abs(r1-r2)){
+		double l = (r1*r1 - r2*r2 + d*d) / (2*d);
+		double h = sqrt(r1*r1 - l*l);
+
+		if (h > 0) {
+			double x1 = l*(a2-a1)/d + h*(b2-b1)/d + a1;
+			double y1 = l*(b2-b1)/d - h*(a2-a1)/d + b1;
+			double x2 = l*(a2-a1)/d - h*(b2-b1)/d + a1;
+			double y2 = l*(b2-b1)/d + h*(a2-a1)/d + b1;
+			//std::cout<<x1<<" "<<y1<<" "<<x2<<" "<<y2<<std::endl;
+
+			float theta11 = mod2Pi(atan2(y1-b1,x1-a1));
+			float theta12 = mod2Pi(atan2(y1-b2,x1-a2));
+			float theta21 = mod2Pi(atan2(y2-b1,x2-a1));
+			float theta22 = mod2Pi(atan2(y2-b2,x2-a2));
+
+			// both pass (x1,y1) or both pass (x2,y2)
+			bool re11 = arc_pass_intersection(theta11, s1, e1);
+			bool re12 = arc_pass_intersection(theta12, s2, e2);
+			bool re21 = arc_pass_intersection(theta21, s1, e1);
+			bool re22 = arc_pass_intersection(theta22, s2, e2);
+
+			if ((re11 && re12) || (re21 && re22)) return true;
+		}
+		else{
+			double x = l*(a2-a1)/d + a1;
+			double y = l*(b2-b1)/d + b1;
+
+			float theta1 = mod2Pi(atan2(y-b1,x-a1));
+			float theta2 = mod2Pi(atan2(y-b2,x-a2));
+
+			bool re1 = arc_pass_intersection(theta1, s1, e1);
+			bool re2 = arc_pass_intersection(theta2, s2, e2);
+
+			if (re1 && re2) return true;
+		}
+	}
+	
+	return false;
 }
