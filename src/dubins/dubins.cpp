@@ -507,7 +507,7 @@ shortestDubinsResult dubinsPath(robotPos pos0, robotPos posf, float Kmax, vector
     return sd;
 }
 
-bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax)
+bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax, bool print)
 {
     vector<Point2d> line2;
     double x, y, s, e;

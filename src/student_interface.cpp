@@ -156,22 +156,6 @@ namespace student {
     //adding the first point of the obstacle to the end to close the polygon
     obstacles = close_polygons(obstacles);
 
-    // Concatenate obstacles and boundary as one vector for collision detection
-    boundary.push_back(boundary.front());
-    std::vector<std::vector<pt>> obs;
-    std::vector<pt> ob;
-    for (int i=0; i<obstacles.size(); i++){
-      for (int j=0; j<obstacles[i].size(); j++){
-        ob.push_back(pt{obstacles[i][j].x, obstacles[i][j].y});
-      }
-      obs.push_back(ob);
-      ob.clear();
-    }
-    for (int j=0; j<boundary.size(); j++){
-      ob.push_back(pt{boundary[j].x, boundary[j].y});
-    }
-    obs.push_back(ob);
-
     //determining the limits of the vertical lines
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
@@ -215,6 +199,7 @@ namespace student {
     std::vector<int> feasible_dubins = {0, 0, 0}; // flag of feasible multipoints dubins for robots
     std::vector<std::vector<int>> *path_option;
     std::vector<POINT> *graph_option = &graph_vertices;
+    std::vector<bool> done(false, robots_number);
 
     // parameters for the optimize look ahead
     // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
@@ -242,6 +227,23 @@ namespace student {
         graph_option = &graph_vertices;
         break; 
     }
+
+    // Concatenate obstacles and boundary as one vector for collision detection
+    boundary.push_back(boundary.front());
+    std::vector<std::vector<pt>> obs;
+    std::vector<pt> ob;
+    for (int i=0; i<obstacles.size(); i++){
+      for (int j=0; j<obstacles[i].size(); j++){
+        ob.push_back(pt{obstacles[i][j].x, obstacles[i][j].y});
+      }
+      obs.push_back(ob);
+      ob.clear();
+    }
+    for (int j=0; j<boundary.size(); j++){
+      ob.push_back(pt{boundary[j].x, boundary[j].y});
+    }
+    obs.push_back(ob);
+
     //the graph is adjusted for each point by adding its starting point
     //then a path is calculated for each robot
     while(feasible_dubins[0] + feasible_dubins[1] + feasible_dubins[2] != 3) {
@@ -257,7 +259,7 @@ namespace student {
           //finding a path using breadth first search
           my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
           look_ahead = my_path[robot].size() - reduce_opt[robot];
-          cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;  
+          cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;
           if(look_ahead == 0) {last_opt[robot] = 1;}
 
           //separating only the graph vertices which belong to the path for optimization purposes
@@ -276,9 +278,9 @@ namespace student {
           //changing the path index to actual points for dubins
           path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
           //printing and plotting the results
-          cout << "RESULTS FOR ROBOT " << robot << endl;
-          print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
-                     optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
+          // cout << "RESULTS FOR ROBOT " << robot << endl;
+          // print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
+          //            optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
           plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices,my_path[robot],*graph_option,
                    (*path_option)[robot]); 
         }
@@ -288,7 +290,7 @@ namespace student {
 
       // ****DUBINS PATH****
 
-      float Kmax = 5.0;
+      float Kmax = 8.0;
 
       // Multipoints-dubins
       std::cout<<"Multipoints_dubins ----------------------\n"<<std::endl;
@@ -297,35 +299,34 @@ namespace student {
         std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
         path_points[robot][0].th = mod2Pi(theta[robot]);
 
-        std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
-        if (mdubins.size()>0){
-          for (int i = 0; i < mdubins.size(); i++){
-            for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
-              path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+        if (done[robot] == false){
+          std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
+          if (mdubins.size()>0){
+            for (int i = 0; i < mdubins.size(); i++){
+              for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
+                path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+              }
             }
+            done[robot] = true;
           }
-        }
-        else{
-          if(!last_opt[robot]) {
-            feasible_dubins[robot] = 0; // if false, change look-ahead
-            reduce_opt[robot] += 1;
-            break;
-          }
-          else {
-            cout << "Can't find dubins path no matter of the optimization" << endl;
-            feasible_dubins[robot] = 1; //fake it to go out of the loop
+          else{
+            if(!last_opt[robot]) {
+              feasible_dubins[robot] = 0; // if false, change look-ahead
+              reduce_opt[robot] += 1;
+              break;
+            }
+            else {
+              std::cout<<"Can't find dubins path no matter of the optimization"<<std::endl;
+              feasible_dubins[robot] = 1; //fake it to go out of the loop
+            }
           }
         }
       }
     }
 
-
-    //emplace here 
-
     plot_dubins(plot,path,robots_number);
 
     // ****END OF DUBBINS PATH****
-
 
 
     //close the plot on key press

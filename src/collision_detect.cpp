@@ -191,7 +191,14 @@ bool arc_line_coll(double a, double b, double r, double s, double e, std::vector
 		{
 			float theta = atan2((*it).y-b, (*it).x-a);
 			theta = mod2Pi(theta);
-			result = arc_pass_intersection(theta, s, e);
+			if (s < e && theta >= s && theta <= e)
+			{
+				result = true;
+			}
+			if (s > e && !(theta > e && theta < s))
+			{
+				result = true;
+			}
 		}
 	}
 

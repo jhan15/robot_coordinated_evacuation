@@ -196,7 +196,7 @@ dubinsCurve createCurve(robotPos pos0, originalLength ol, float *ks);
 //          FIND SHORTEST DUBINS CURVE
 //----------------------------------------------------------------
 shortestDubinsResult dubinsPath(robotPos pos0, robotPos posf, float Kmax, vector<vector<pt>> obstacles, bool print=false);
-bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax);
+bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax, bool print=false);
 bool checkTwoDubins(dubinsCurve c1, dubinsCurve c2, float Kmax);
 
 //----------------------------------------------------------------
