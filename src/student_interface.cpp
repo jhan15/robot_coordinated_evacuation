@@ -115,7 +115,7 @@ namespace student {
       //we assume that if the starting position is (0,0,0) the robot is not spawned
       //doesn't really relevant for the examined case where the robots are always 3
       if (x[i] + y[i] + theta[i] != 0) robots_number += 1;
-    }   
+    }
 
     //convert input gate position data into the data format we use
     std::vector<POINT> gate;
@@ -125,13 +125,10 @@ namespace student {
     for (int i = 0; i < gate_list.size(); i++) {
       for (const auto &position : gate_list[i]) {
         gate.push_back({position.x,position.y});
-
       }
       end_point.push_back(centroid(gate));
       gate.clear();
     }
-
-    end_point[0] = {end_point[0].x,end_point[0].y-0.04};
 
     //the total number of vertices of all obstacles together
     int vertices_num = 0;
@@ -161,6 +158,9 @@ namespace student {
     //determining the limits of the vertical lines
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
+
+    std::vector<SEGMENT> boundary_lines = get_boundary_lines(boundary);
+    std::vector<POINT> end_points = offset_end_points (boundary_lines,robots_number, end_point);
 
     //finding the vertical lines
     std::vector< SEGMENT > open_line_segments;
@@ -200,7 +200,7 @@ namespace student {
 
     // parameters for the optimize look ahead
     // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
-    int look_ahead = INFINITY; // how many points ahead current point is allowed to look
+    float look_ahead = INFINITY; // how many points ahead current point is allowed to look
     float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
 
     // option #1: my_path
@@ -226,7 +226,7 @@ namespace student {
     //then a path is calculated for each robot
     for(int robot = 0; robot < robots_number; robot ++) {
       //adding the start and end point for each robot into the graph
-      tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_point, obstacles);
+      tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_points[robot], obstacles);
 
       //constructing the graph
       std::vector< std::vector<int> > graph;
@@ -252,9 +252,9 @@ namespace student {
       path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
       //printing and plotting the results
       cout << "RESULTS FOR ROBOT " << robot << endl;
-      print_data(boundary, start_point, end_point, obstacles, graph_vertices, graph, new_graph_vertices,
+      print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
                  optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
-      plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_point, graph, graph_vertices,my_path[robot],*graph_option,
+      plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices,my_path[robot],*graph_option,
                (*path_option)[robot]); 
     }    
 

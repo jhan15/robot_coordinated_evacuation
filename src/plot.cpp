@@ -12,7 +12,7 @@
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
 
-void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, std::vector<std::vector<POINT>> cells, POINT start_point, std::vector<POINT> end_point, std::vector<std::vector<int>> graph, std::vector<POINT> graph_vertices,std::vector<int> my_path, std::vector<POINT> graph_chosen, std::vector<int> path){
+void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, std::vector<std::vector<POINT>> cells, POINT start_point, POINT end_point, std::vector<std::vector<int>> graph, std::vector<POINT> graph_vertices,std::vector<int> my_path, std::vector<POINT> graph_chosen, std::vector<int> path){
 
     int enlarge = 600;
     float robot = 0.8 * robot_num;
@@ -106,7 +106,7 @@ void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, s
     cv::circle(plot, centerCircle11, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
     std::string text1 = "start_point";
     putText(plot, text1, centerCircle11, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255/robot_num,255));
-    cv::Point2f centerCircle111(end_point[0].x*enlarge,end_point[0].y*enlarge);
+    cv::Point2f centerCircle111(end_point.x*enlarge,end_point.y*enlarge);
     cv::circle(plot, centerCircle111, 2,cv::Scalar( 0, 0, 0 ),cv::FILLED,cv::LINE_8);
     std::string text2 = "end_point";
     putText(plot, text2, centerCircle111, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));

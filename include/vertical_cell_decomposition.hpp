@@ -42,16 +42,17 @@ std::vector<std::vector<POINT>> boundary_cells(std::vector<POINT> boundary, std:
 tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vector<POINT> > cells);
 float find_dist(POINT pt1, POINT pt2);
 bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment);
-tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, vector<POINT> end_point, std::vector<std::vector<POINT>> obstacles);
+tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, POINT end_point, std::vector<std::vector<POINT>> obstacles);
 std::vector<std::vector<int> > graph_construction(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges);
 std::vector<int> backtrace(std::vector<int> parent, int start, int end);
 std::vector<int> bfs(std::vector< std::vector<int>> graph, int source, int target);
 std::vector<std::vector<int>> optimize_graph(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles);
-std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, int look_ahead, float gamma);
+std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, float look_ahead, float gamma);
 std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vector<POINT> coordinates);
-void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std::vector<POINT> end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points);    
+void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, POINT end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points);    
 std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<robotPos>> initial_paths);
-
+std::vector<SEGMENT> get_boundary_lines(std::vector<POINT> boundary);
+std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines,int robots_number, std::vector<POINT>end_point);
 // bool points_successive (POINT a, POINT b, std::vector<POINT> obstacle);
 // int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles);
 // POINT intersection(SEGMENT segment1, SEGMENT segment2);

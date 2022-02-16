@@ -954,7 +954,7 @@ bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segm
 }
 
 
-tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, vector<POINT> end_point, std::vector<std::vector<POINT>> obstacles){
+tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, POINT end_point, std::vector<std::vector<POINT>> obstacles){
     //Source
     int min_ind = -1; 
     float min = INFINITY;
@@ -1012,10 +1012,10 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
     min = INFINITY;
 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      temp_segment.a = end_point[0]; //TODO: change for more than one robot
+      temp_segment.a = end_point; //TODO: change for more than one robot
       temp_segment.b = graph_vertices[vertex];
       if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], end_point[0]); //TODO: change for more than one robot
+        dist = find_dist(graph_vertices[vertex], end_point); //TODO: change for more than one robot
         if(dist < min) {
           min = dist;
           min_ind = vertex;
@@ -1029,7 +1029,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
       //return false;
     }
 
-    graph_vertices.push_back(end_point[0]); //TODO: change for more than one robot
+    graph_vertices.push_back(end_point); //TODO: change for more than one robot
     m = graph_vertices.size()-1;
     temp_point.x = min_ind;
     temp_point.y = m;
@@ -1156,7 +1156,7 @@ std::vector<std::vector<int>>  optimize_graph(std::vector<int> my_path, std::vec
     return optimized_graph;
 }
 
-std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, int look_ahead, float gamma){
+std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, float look_ahead, float gamma){
   SEGMENT temp_path;
   SEGMENT temp_obs;
   float distance= 0.0 ;
@@ -1252,7 +1252,72 @@ std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vec
 }
 
 
-void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, std::vector<POINT> end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points) {    
+std::vector<SEGMENT> get_boundary_lines(std::vector<POINT> boundary){
+  std::vector<SEGMENT> boundary_lines;
+  SEGMENT temp_s;
+  for(int j=0; j < boundary.size();j++){
+    int inde = (j+1) % boundary.size();
+    temp_s.a = {boundary[j].x,boundary[j].y};
+    temp_s.b = {boundary[inde].x,boundary[inde].y}; 
+    boundary_lines.push_back(temp_s);
+    // cout << "boundary lines: (" << boundary_lines[boundary_lines.size()-1].a.x << " , " << boundary_lines[boundary_lines.size()-1].a.y << "),(" << boundary_lines[boundary_lines.size()-1].b.x << " , " << boundary_lines[boundary_lines.size()-1].b.y << endl;
+  }
+  return boundary_lines;
+}
+
+
+std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines, int robots_number, std::vector<POINT>end_point){
+  float smallest_distance= INFINITY;
+  int closest_boarder=-1;
+  for (int j=0 ; j<boundary_lines.size();j++){
+    cout << "boundary : (" << boundary_lines[j].a.x << " , " << boundary_lines[j].a.y << "),("<< boundary_lines[j].b.x << " , " << boundary_lines[j].b.y << endl;
+    float A = end_point[0].x - boundary_lines[j].a.x;
+    float B = end_point[0].y - boundary_lines[j].a.y;
+    float C = boundary_lines[j].b.x - boundary_lines[j].a.x;
+    float D = boundary_lines[j].b.y - boundary_lines[j].a.y;
+    float dist = abs(A * D - C * B) / sqrt(C * C + D * D);
+    cout << "distance is " << dist << "for boundary :" << "( " << j << " )" << endl;
+    if (dist < smallest_distance){
+      smallest_distance = dist;
+      closest_boarder = j;
+    }
+  }
+  cout << "closest boundary :"<< closest_boarder << " ," << boundary_lines[closest_boarder].a.x << " , " << boundary_lines[closest_boarder].a.y << "),("<< boundary_lines[closest_boarder].b.x << " , " << boundary_lines[closest_boarder].b.y << endl;
+
+  std::vector<POINT> end_points;
+  for(int rob = 0; rob < robots_number;rob++){
+    end_points.push_back(end_point[0]);
+  }
+
+  float offset_gate_width = -0.05;
+  float offset_away_from_gate = 0.04;
+  for(int rob = 0 ; rob < robots_number; rob++){
+    // 0  horizontal top
+    if(closest_boarder == 0){
+      end_points[rob] = {end_points[rob].x+offset_gate_width,end_points[rob].y+offset_away_from_gate};
+    }
+    // 1  vertical right
+    if(closest_boarder == 1){
+      end_points[rob] = {end_points[rob].x-offset_away_from_gate,end_points[rob].y +offset_gate_width};
+    }
+    // 2  horizontal bottom
+    if(closest_boarder == 2){
+      cout << "original :" << end_points[rob].x << " , " << end_points[rob].y << endl;
+      end_points[rob] = {end_points[rob].x+offset_gate_width,end_points[rob].y-offset_away_from_gate};
+      cout << "change to: " << end_points[rob].x+offset_gate_width << " , "<< end_points[rob].y-offset_away_from_gate << endl;
+    }
+    // 3  vertical left
+    if(closest_boarder == 3){
+      end_points[rob] = {end_points[rob].x+offset_away_from_gate,end_points[rob].y +offset_gate_width};
+    }
+    offset_gate_width += 0.05;
+  }
+  
+  return end_points;
+}
+
+
+void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, POINT end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points) {    
     
     // FOR DEBUG
     // std::cout<<"\n>>>> Border postion:"<<std::endl;
