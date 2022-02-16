@@ -792,3 +792,93 @@ vector<dubinsWaypoint> getDubinsWaypoints(dubinsCurve curve)
 
     return dubinsWPList;
 }
+
+
+//----------------------------------------------------------------
+//          MULTIPOINTS DUBINS
+//----------------------------------------------------------------
+vector<shortestDubinsResult> dubinsIDP(vector<robotPos> path_points, vector<vector<pt>> obs, float Kmax)
+{
+    vector<shortestDubinsResult> mdubins;
+
+    int ntheta = 72;
+    int npoint = path_points.size();
+    float dp[npoint-1][ntheta];
+    int dp_index[npoint-1][ntheta];
+
+    float dtheta = 2*M_PI/ntheta;
+
+    if (npoint == 2){
+        dp[0][0] = numeric_limits<float>::infinity();
+        for (int i = 0; i < ntheta; i++){
+            path_points[1].th = i*dtheta;
+            shortestDubinsResult sd = dubinsPath(path_points[0], path_points[1], Kmax, obs);
+            
+            if (!sd.find_dubins) continue;
+            
+            if (sd.curve.L < dp[0][0]){
+                dp[0][0] = sd.curve.L;
+                dp_index[0][0] = i;
+            }
+        }
+    }
+    else{
+        for (int i = npoint-2; i > 0; i--){
+            for (int j = 0; j < ntheta; j++){
+                dp[i][j] = numeric_limits<float>::infinity();
+                path_points[i].th = j*dtheta;
+                for (int k = 0; k < ntheta; k++){
+                    path_points[i+1].th = k*dtheta;
+                    shortestDubinsResult sd = dubinsPath(path_points[i], path_points[i+1], Kmax, obs);
+                    
+                    if (!sd.find_dubins) continue;
+
+                    if (i == npoint-2){
+                        if (sd.curve.L < dp[i][j]){
+                            dp[i][j] = sd.curve.L;
+                            dp_index[i][j] = k;
+                        }
+                    }
+                    else{
+                        if ((sd.curve.L + dp[i+1][k]) < dp[i][j]){
+                            dp[i][j] = sd.curve.L + dp[i+1][k];
+                            dp_index[i][j] = k;
+                        }
+                    }
+                }
+            }
+        }
+        dp[0][0] = numeric_limits<float>::infinity();
+        for (int i = 0; i < ntheta; i++){
+            path_points[1].th = i*dtheta;
+            shortestDubinsResult sd = dubinsPath(path_points[0], path_points[1], Kmax, obs);
+
+            if (!sd.find_dubins) continue;
+            
+            if ((sd.curve.L + dp[1][i]) < dp[0][0]){
+                dp[0][0] = sd.curve.L + dp[1][i];
+                dp_index[0][0] = i;
+            }
+        }
+    }
+
+    if (dp[0][0] < numeric_limits<float>::infinity()){
+        int id;
+        cout<<"---- points "<<0<<" ("<<path_points[0].x<<", "<<path_points[0].y<<", "<<path_points[0].th<<")"<<endl;
+        for (int i = 0; i < npoint-1; i++){
+            if (i == 0){
+                id = dp_index[0][0];
+            }
+            else{
+                id = dp_index[i][id];
+            }
+            path_points[i+1].th = id*dtheta;
+            cout<<"---- points "<<i+1<<" ("<<path_points[i+1].x<<", "<<path_points[i+1].y<<", "<<path_points[i+1].th<<")"<<endl;
+            shortestDubinsResult sd = dubinsPath(path_points[i], path_points[i+1], Kmax, obs);
+            mdubins.emplace_back(sd);
+        }
+        cout<<"     feasible dubins found!\n"<<endl;
+    }
+
+    return mdubins;
+}

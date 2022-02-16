@@ -14,6 +14,7 @@
 #include "vertical_cell_decomposition.hpp"
 #include "motion_planning.hpp"
 
+
 int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
 
 namespace student {
@@ -318,21 +319,8 @@ namespace student {
 //     //adjust the paths for collision free motion
 //     test_points = coordinate_motion(test_points);
 
-    // DUBINS
-    // Compute the orientations of path_points
-    for(int robot = 0; robot < robots_number; robot ++) {
-      path_points[robot][0].th = mod2Pi(theta[robot]);
-      if (path_points[robot].size() > 2)
-      {
-        for (int id=1; id<path_points[robot].size(); id++)
-        {
-          if (id == path_points[robot].size()-1) path_points[robot][id].th = path_points[robot][id-1].th;
-          else path_points[robot][id].th = mod2Pi(atan2(path_points[robot][id+1].y-path_points[robot][id].y,
-                                                        path_points[robot][id+1].x-path_points[robot][id].x));
-        }
-      }
-      else path_points[robot][1].th = 0;
-    }
+
+    // ****DUBINS PATH****
 
     // Concatenate obstacles and boundary as one vector for collision detection
     boundary.push_back(boundary.front());
@@ -350,53 +338,40 @@ namespace student {
     }
     obs.push_back(ob);
 
-    float Kmax = 25.0;
+    float Kmax = 20.0;
 
-    // Compute the collision-free dubins path between two points
-    // Store point-pairs w/o collision-free dubins
-    std::vector<std::vector<pt>> remove;
-    std::vector<pt> temp;
-    std::vector<std::vector<dubinsCurve>> curves;
-    std::vector<dubinsCurve> tc;
-    for(int robot = 0; robot < robots_number; robot ++) {
-      float count = 0;
+    // Multipoints-dubins
+    bool feasible_dubins[robots_number]; // flag of feasible multipoints dubins for robots
+
+    std::cout<<"Multipoints_dubins ----------------------\n"<<std::endl;
+    for(int robot = 0; robot < robots_number; robot ++){
+      feasible_dubins[robot] = true;
       std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
-      for (auto it0 = path_points[robot].begin(), it1 = std::next(path_points[robot].begin());
-          it0 != std::prev(path_points[robot].end()) && it1 != path_points[robot].end(); ++it0, ++it1)
-      {
-        std::cout<<"---- points"<<count<<" ("<<(*it0).x<<", "<<(*it0).y<<", "<<(*it0).th<<") and ";
-        std::cout<<count+1<<" ("<<(*it1).x<<", "<<(*it1).y<<", "<<(*it1).th<<")"<<std::endl;
-        std::cout<<"     collision-free dubins path: ";
-        shortestDubinsResult sd = dubinsPath(*it0, *it1, Kmax, obs);
-        if (sd.find_dubins){
-          std::cout<<"yes"<<std::endl;
-          tc.push_back(sd.curve);
-          for (auto it = sd.dubinsWPList.begin(); it != sd.dubinsWPList.end(); ++it){
+      path_points[robot][0].th = mod2Pi(theta[robot]);
+
+      std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
+      if (mdubins.size()>0){
+        for (int i = 0; i < mdubins.size(); i++){
+          for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
             path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
           }
         }
-        else {
-          temp.push_back(pt{count,count+1});
-          std::cout<<"no"<<std::endl;
-        }
-        count = count + 1;
       }
-      remove.push_back(temp);
-      temp.clear();
-      curves.push_back(tc);
-      tc.clear();
+      else{
+        feasible_dubins[robot] = false; // if false, change look-ahead
+        break;
+      }
     }
-    // bool aac = checkTwoDubins(curves[0][2], curves[1][1], Kmax);
-    // std::cout<<"dubins curves collision: "<<aac<<std::endl;
+
     plot_dubins(plot,path,robots_number);
 
-    // END OF DUBBINS PATH
+    // ****END OF DUBBINS PATH****
 
 
 
     //close the plot on key press
-    // cv::waitKey(0);    
-    // cv::destroyAllWindows();
+    cv::waitKey(0);    
+    cv::destroyAllWindows();
 
     return true;
   }

@@ -208,4 +208,9 @@ void getArcWaypoints(dubinsArc arc, vector<dubinsWaypoint>& dubinsWPList);
 // Get waypoints of curve
 vector<dubinsWaypoint> getDubinsWaypoints(dubinsCurve curve);
 
+//----------------------------------------------------------------
+//          MULTIPOINTS DUBINS
+//----------------------------------------------------------------
+vector<shortestDubinsResult> dubinsIDP(vector<robotPos> path_points, vector<vector<pt>> obs, float Kmax);
+
 #endif /* DUBINS_H */
