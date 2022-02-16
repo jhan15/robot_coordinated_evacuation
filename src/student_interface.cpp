@@ -156,6 +156,22 @@ namespace student {
     //adding the first point of the obstacle to the end to close the polygon
     obstacles = close_polygons(obstacles);
 
+    // Concatenate obstacles and boundary as one vector for collision detection
+    boundary.push_back(boundary.front());
+    std::vector<std::vector<pt>> obs;
+    std::vector<pt> ob;
+    for (int i=0; i<obstacles.size(); i++){
+      for (int j=0; j<obstacles[i].size(); j++){
+        ob.push_back(pt{obstacles[i][j].x, obstacles[i][j].y});
+      }
+      obs.push_back(ob);
+      ob.clear();
+    }
+    for (int j=0; j<boundary.size(); j++){
+      ob.push_back(pt{boundary[j].x, boundary[j].y});
+    }
+    obs.push_back(ob);
+
     //determining the limits of the vertical lines
     float y_limit_lower = min(min(boundary[0].y, boundary[1].y), min(boundary[2].y, boundary[3].y));
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
@@ -196,13 +212,16 @@ namespace student {
     optimized_path = {{}, {}, {}};
     optimized_path_look_ahead = {{}, {}, {}}; 
     path_points = {{}, {}, {}};
+    std::vector<int> feasible_dubins = {0, 0, 0}; // flag of feasible multipoints dubins for robots
     std::vector<std::vector<int>> *path_option;
     std::vector<POINT> *graph_option = &graph_vertices;
 
     // parameters for the optimize look ahead
     // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
-    float look_ahead = INFINITY; // how many points ahead current point is allowed to look
+    float look_ahead; // how many points ahead current point is allowed to look
     float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
+    std::vector<int> reduce_opt = {0, 0, 0};
+    std::vector<int> last_opt = {0, 0, 0};
 
     // option #1: my_path
     // option #2: optimized_path
@@ -225,143 +244,83 @@ namespace student {
     }
     //the graph is adjusted for each point by adding its starting point
     //then a path is calculated for each robot
-    for(int robot = 0; robot < robots_number; robot ++) {
-      //adding the start and end point for each robot into the graph
-      tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_points[robot], obstacles);
+    while(feasible_dubins[0] + feasible_dubins[1] + feasible_dubins[2] != 3) {
+      for(int robot = 0; robot < robots_number; robot ++) {
+        if(feasible_dubins[robot] == 0) {
+          //adding the start and end point for each robot into the graph
+          tie(graph_edges, graph_vertices) = add_start_end(graph_vertices_map, graph_edges_map, start_point[robot], end_points[robot], obstacles);
 
-      //constructing the graph
-      std::vector< std::vector<int> > graph;
-      graph = graph_construction(graph_vertices, graph_edges);
-    
-      //finding a path using breadth first search
-      my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
+          //constructing the graph
+          std::vector< std::vector<int> > graph;
+          graph = graph_construction(graph_vertices, graph_edges);
+        
+          //finding a path using breadth first search
+          my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
+          look_ahead = my_path[robot].size() - reduce_opt[robot];
+          cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;  
+          if(look_ahead == 0) {last_opt[robot] = 1;}
 
-      //separating only the graph vertices which belong to the path for optimization purposes
-      new_graph_vertices.clear();
-      for(int i = 0 ; i < my_path[robot].size(); i++){
-        new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
-      }
+          //separating only the graph vertices which belong to the path for optimization purposes
+          new_graph_vertices.clear();
+          for(int i = 0 ; i < my_path[robot].size(); i++){
+            new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
+          }
 
-      //optimizing the graph
-      std::vector< std::vector<int> >  optimized_graph;
-      optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
+          //optimizing the graph
+          std::vector< std::vector<int> >  optimized_graph;
+          optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
 
-      //calculating the optimized path using breadth first search
-      optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
-      optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
-      //changing the path index to actual points for dubins
-      path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
-      //printing and plotting the results
-      cout << "RESULTS FOR ROBOT " << robot << endl;
-      print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
-                 optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
-      plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices,my_path[robot],*graph_option,
-               (*path_option)[robot]); 
-    }    
+          //calculating the optimized path using breadth first search
+          optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
+          optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
+          //changing the path index to actual points for dubins
+          path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
+          //printing and plotting the results
+          cout << "RESULTS FOR ROBOT " << robot << endl;
+          print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
+                     optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
+          plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices,my_path[robot],*graph_option,
+                   (*path_option)[robot]); 
+        }
+      }    
 
-    //Remove from here down after testing the coordinat_motion function
-//     std::vector<std::vector<robotPos>> test_points = {{}, {}, {}};
-//     robotPos temp_point;
-//     temp_point.x = 1;
-//     temp_point.y = 5;
-//     test_points[0].push_back(temp_point);
-//     temp_point.x = 8;
-//     temp_point.y = 5;
-//     test_points[0].push_back(temp_point);
-// /*    temp_point.x = 5;
-//     temp_point.y = 1;
-//     test_points[0].push_back(temp_point);
-//     temp_point.x = 9;
-//     temp_point.y = 8;
-//     test_points[0].push_back(temp_point);
-// */
-//     temp_point.x = 1;
-//     temp_point.y = 3;
-//     test_points[1].push_back(temp_point);
-//     temp_point.x = 3;
-//     temp_point.y = 3;
-//     test_points[1].push_back(temp_point);
-//     temp_point.x = 5;
-//     temp_point.y = 1;
-//     test_points[1].push_back(temp_point);
-//     temp_point.x = 9;
-//     temp_point.y = 5;
-//     test_points[1].push_back(temp_point);
-// /*    temp_point.x = 9;
-//     temp_point.y = 8;
-//     test_points[1].push_back(temp_point);
-// */
-//     temp_point.x = 1;
-//     temp_point.y = 1;
-//     test_points[2].push_back(temp_point);
-//     temp_point.x = 3;
-//     temp_point.y = 2;
-//     test_points[2].push_back(temp_point);
-//     temp_point.x = 5;
-//     temp_point.y = 2;
-//     test_points[2].push_back(temp_point);
-//     temp_point.x = 7;
-//     temp_point.y = 3;
-//     test_points[2].push_back(temp_point);
-//     temp_point.x = 9;
-//     temp_point.y = 4;
-//     test_points[2].push_back(temp_point);
+      //path_points = coordinate_motion(path_points);
 
-//     for(int i = 0; i < 3; i++){
-//       for(int j = 0; j < test_points[i].size(); j++){
-//         cout << "{" << test_points[i][j].x << ", " << test_points[i][j].y << "}, ";
-//       }
-//       cout << endl;
-//     }
+      // ****DUBINS PATH****
 
-//     //end of removal; change test_points to path_points below
+      float Kmax = 5.0;
 
-//     //adjust the paths for collision free motion
-//     test_points = coordinate_motion(test_points);
+      // Multipoints-dubins
+      std::cout<<"Multipoints_dubins ----------------------\n"<<std::endl;
+      for(int robot = 0; robot < robots_number; robot ++){
+        feasible_dubins[robot] = 1;
+        std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
+        path_points[robot][0].th = mod2Pi(theta[robot]);
 
-
-    // ****DUBINS PATH****
-
-    // Concatenate obstacles and boundary as one vector for collision detection
-    boundary.push_back(boundary.front());
-    std::vector<std::vector<pt>> obs;
-    std::vector<pt> ob;
-    for (int i=0; i<obstacles.size(); i++){
-      for (int j=0; j<obstacles[i].size(); j++){
-        ob.push_back(pt{obstacles[i][j].x, obstacles[i][j].y});
-      }
-      obs.push_back(ob);
-      ob.clear();
-    }
-    for (int j=0; j<boundary.size(); j++){
-      ob.push_back(pt{boundary[j].x, boundary[j].y});
-    }
-    obs.push_back(ob);
-
-    float Kmax = 20.0;
-
-    // Multipoints-dubins
-    bool feasible_dubins[robots_number]; // flag of feasible multipoints dubins for robots
-
-    std::cout<<"Multipoints_dubins ----------------------\n"<<std::endl;
-    for(int robot = 0; robot < robots_number; robot ++){
-      feasible_dubins[robot] = true;
-      std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
-      path_points[robot][0].th = mod2Pi(theta[robot]);
-
-      std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
-      if (mdubins.size()>0){
-        for (int i = 0; i < mdubins.size(); i++){
-          for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
-            path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+        std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
+        if (mdubins.size()>0){
+          for (int i = 0; i < mdubins.size(); i++){
+            for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
+              path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+            }
+          }
+        }
+        else{
+          if(!last_opt[robot]) {
+            feasible_dubins[robot] = 0; // if false, change look-ahead
+            reduce_opt[robot] += 1;
+            break;
+          }
+          else {
+            cout << "Can't find dubins path no matter of the optimization" << endl;
+            feasible_dubins[robot] = 1; //fake it to go out of the loop
           }
         }
       }
-      else{
-        feasible_dubins[robot] = false; // if false, change look-ahead
-        break;
-      }
     }
+
+
+    //emplace here 
 
     plot_dubins(plot,path,robots_number);
 
