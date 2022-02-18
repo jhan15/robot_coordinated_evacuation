@@ -27,7 +27,7 @@
 #include <limits>
 #include <assert.h>
 #include "dubins.h"
-#include "collision.hpp"
+#include "collision_detect.hpp"
 
 using namespace std;
 
@@ -510,11 +510,11 @@ shortestDubinsResult dubinsPath(robotPos pos0, robotPos posf, float Kmax, vector
 // Check if two arcs are intersected
 bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax, bool print)
 {
-    vector<Point2d> line2;
+    vector<cv::Point2d> line2;
     double x, y, s, e;
 
     if (a.k == 0){
-        line2 = {Point2d(a.pos0.x, a.pos0.y), Point2d(a.posf.x, a.posf.y)};
+        line2 = {cv::Point2d(a.pos0.x, a.pos0.y), cv::Point2d(a.posf.x, a.posf.y)};
     }
     else {
         if (a.k > 0){
@@ -532,10 +532,10 @@ bool checkCollision(dubinsArc a, vector<vector<pt>> obs, float Kmax, bool print)
     }
     for (int i = 0; i < obs.size(); i++){
         for (int j = 0; j < (obs[i].size()-1); j++){
-            vector<Point2d> line1 = {Point2d(obs[i][j].x, obs[i][j].y),
-                                     Point2d(obs[i][j+1].x, obs[i][j+1].y)};
+            vector<cv::Point2d> line1 = {cv::Point2d(obs[i][j].x, obs[i][j].y),
+                                     cv::Point2d(obs[i][j+1].x, obs[i][j+1].y)};
             if (a.k == 0){
-                vector<Point2d> pts = line_line_coll(line1, line2);
+                vector<cv::Point2d> pts = line_line_coll(line1, line2);
                 if (pts.size() > 0) return true;
             }
             else {
@@ -553,20 +553,20 @@ bool checkTwoDubins(dubinsCurve c1, dubinsCurve c2, float Kmax)
 {
     vector<dubinsArc> v1 = {c1.a1, c1.a2, c1.a3};
     vector<dubinsArc> v2 = {c2.a1, c2.a2, c2.a3};
-    vector<Point2d> line1, line2;
+    vector<cv::Point2d> line1, line2;
     double x1, y1, s1, e1;
     double x2, y2, s2, e2;
 
     for (auto it0 = v1.begin(); it0 != v1.end(); ++it0){
         for (auto it1 = v2.begin(); it1 != v2.end(); ++it1){
             if ((*it0).k == 0 && (*it1).k == 0){
-                line1 = {Point2d((*it0).pos0.x, (*it0).pos0.y), Point2d((*it0).posf.x, (*it0).posf.y)};
-                line2 = {Point2d((*it1).pos0.x, (*it1).pos0.y), Point2d((*it1).posf.x, (*it1).posf.y)};
-                vector<Point2d> pts = line_line_coll(line1, line2);
+                line1 = {cv::Point2d((*it0).pos0.x, (*it0).pos0.y), cv::Point2d((*it0).posf.x, (*it0).posf.y)};
+                line2 = {cv::Point2d((*it1).pos0.x, (*it1).pos0.y), cv::Point2d((*it1).posf.x, (*it1).posf.y)};
+                vector<cv::Point2d> pts = line_line_coll(line1, line2);
                 if (pts.size() > 0) return true;
             }
             if ((*it0).k == 0 && (*it1).k != 0){
-                line1 = {Point2d((*it0).pos0.x, (*it0).pos0.y), Point2d((*it0).posf.x, (*it0).posf.y)};
+                line1 = {cv::Point2d((*it0).pos0.x, (*it0).pos0.y), cv::Point2d((*it0).posf.x, (*it0).posf.y)};
                 if ((*it1).k > 0){
                     x2 = (*it1).pos0.x - sin((*it1).pos0.th)/Kmax;
                     y2 = (*it1).pos0.y + cos((*it1).pos0.th)/Kmax;
@@ -583,7 +583,7 @@ bool checkTwoDubins(dubinsCurve c1, dubinsCurve c2, float Kmax)
                 if (re) return true;
             }
             if ((*it0).k != 0 && (*it1).k == 0){
-                line2 = {Point2d((*it1).pos0.x, (*it1).pos0.y), Point2d((*it1).posf.x, (*it1).posf.y)};
+                line2 = {cv::Point2d((*it1).pos0.x, (*it1).pos0.y), cv::Point2d((*it1).posf.x, (*it1).posf.y)};
                 if ((*it0).k > 0){
                     x1 = (*it0).pos0.x - sin((*it0).pos0.th)/Kmax;
                     y1 = (*it0).pos0.y + cos((*it0).pos0.th)/Kmax;

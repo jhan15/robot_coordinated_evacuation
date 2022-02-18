@@ -2,30 +2,79 @@
 
 #include <vector>
 #include <cmath>
-#include "collision.hpp"
+#include "collision_detect.hpp"
 #include "dubins.h"
-
-using namespace cv;
 
 
 //function that performs a cross product
-double cross_prod(Point2d a, Point2d b){
+double cross_prod(cv::Point2d a, cv::Point2d b){
 	return a.x * b.y - a.y * b.x;
 }
 
 //function that performs a dot product
-double dot_prod(Point2d a, Point2d b){
+double dot_prod(cv::Point2d a, cv::Point2d b){
 	return a.x * b.x + a.y * b.y;
 }
 
 //function to calculate distance between two points
-double eucl_distance(Point2d a, Point2d b){
+double eucl_distance(cv::Point2d a, cv::Point2d b){
 	return sqrt(pow(a.x-b.x,2) + pow(a.y-b.y,2));
 }
 
+
+POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2){
+    POINT intersection_pt;
+    boost::geometry::model::linestring<point_boost> line1, line2;
+    typedef boost::geometry::model::segment<point_boost> Segment;
+    Segment AB( point_boost(sigment1.a.x,sigment1.a.y), point_boost(sigment1.b.x,sigment1.b.y) );
+    Segment CD( point_boost(sigment2.a.x,sigment2.a.y), point_boost(sigment2.b.x,sigment2.b.y) );
+
+    std::vector<point_boost> result;
+    boost::geometry::intersection(AB, CD,result);
+
+    if (result.size()>0){
+        intersection_pt = {float(boost::geometry::get<0>(result[0])),float(boost::geometry::get<1>(result[0]))};
+    }
+    else{
+        intersection_pt = {-1,-1};
+    }
+    return intersection_pt;
+}
+
+bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment) {
+    int res = true;
+    int break_out = false;
+    int n;
+    SEGMENT obs_side;
+
+    for(std::vector<POINT> &obs : obstacles){
+        // check that the obstacle starts and ends with the same point
+        
+        if(obs[0].x != obs.back().x || obs[0].y != obs.back().y){
+            obs.push_back(obs[0]);
+        }
+        n = obs.size()-1;
+        for (int pt = 0; pt < n; pt++ ){
+            obs_side.a = obs[pt];
+            obs_side.b = obs[pt+1];
+            if(segment_intersection(segment,obs_side).x != -1){
+                res = false;
+                break_out = true;
+                break;
+            }
+        }
+        if (break_out){
+            break;
+        }
+    }
+
+    return res;
+}
+
+
 //checks if 2 line segments are intersect.
-std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b){
-    std::vector<Point2d> pts;
+std::vector<cv::Point2d> line_line_coll(std::vector<cv::Point2d> line_a, std::vector<cv::Point2d> line_b){
+    std::vector<cv::Point2d> pts;
 	double t;
 	std::vector<double> ts;
 
@@ -56,13 +105,13 @@ std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Poi
 		return pts;
 	}
 
-	Point2d q = Point2d(x_a1, y_a1);
-	Point2d s = Point2d(x_a2-q.x, y_a2-q.y);
+	cv::Point2d q = cv::Point2d(x_a1, y_a1);
+	cv::Point2d s = cv::Point2d(x_a2-q.x, y_a2-q.y);
 
-	Point2d p = Point2d(x_b1, y_b1);
-	Point2d r = Point2d(x_b2-p.x, y_b2-p.y);
+	cv::Point2d p = cv::Point2d(x_b1, y_b1);
+	cv::Point2d r = cv::Point2d(x_b2-p.x, y_b2-p.y);
 
-	Point2d diffPQ = Point2d(q.x-p.x, q.y-p.y);
+	cv::Point2d diffPQ = cv::Point2d(q.x-p.x, q.y-p.y);
 
 	double crossRS = cross_prod(r, s);
 	double crossDiffR = cross_prod(diffPQ,r);
@@ -95,7 +144,7 @@ std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Poi
    	}
 
    	for(int t=0; t<ts.size(); t++){
-   		Point2d pt = Point2d(p.x+ts[t]*r.x, p.y+ts[t]*r.y);
+   		cv::Point2d pt = cv::Point2d(p.x+ts[t]*r.x, p.y+ts[t]*r.y);
    		pts.emplace_back(pt);
    	}
    	
@@ -103,8 +152,8 @@ std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Poi
 }
 
 //checks if a line segment and a circle are intersected.
-std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<Point2d> line){
-    std::vector<Point2d> pts;
+std::vector<cv::Point2d> circle_line_coll(double a, double b, double r, std::vector<cv::Point2d> line){
+    std::vector<cv::Point2d> pts;
 	std::vector<double> t;
 
 	double line_x1 = line[0].x;
@@ -145,14 +194,14 @@ std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<
     if(t1>=0 && t1<=1){
     	x = line_x1*t1+line_x2*(1-t1);
     	y = line_y1*t1+line_y2*(1-t1);
-    	pts.emplace_back(Point2d(x,y));
+    	pts.emplace_back(cv::Point2d(x,y));
     	t.emplace_back(t1);
     }
 
     if(t2 >=0 && t2<=1 && t2!=t1){
 	    x = line_x1*t2+line_x2*(1-t2);
 	    y = line_y1*t2+line_y2*(1-t2);
-	    pts.emplace_back(Point2d(x,y));
+	    pts.emplace_back(cv::Point2d(x,y));
     	t.emplace_back(t2);
 	}
 
@@ -161,11 +210,11 @@ std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<
 }
 
 //checks if a line segment and an arc of circle are intersected.
-bool arc_line_coll(double a, double b, double r, double s, double e, std::vector<Point2d> line)
+bool arc_line_coll(double a, double b, double r, double s, double e, std::vector<cv::Point2d> line)
 {
 	bool result = false;
 
-	std::vector<Point2d> pts = circle_line_coll(a, b, r, line);
+	std::vector<cv::Point2d> pts = circle_line_coll(a, b, r, line);
 
 	if (pts.size() > 0)
 	{
@@ -205,7 +254,7 @@ bool arc_pass_intersection(float theta, double s, double e){
 bool arc_arc_coll(double a1, double b1, double r1, double s1, double e1,
                   double a2, double b2, double r2, double s2, double e2)
 {
-	double d = eucl_distance(Point2d(a1,b1), Point2d(a2,b2));
+	double d = eucl_distance(cv::Point2d(a1,b1), cv::Point2d(a2,b2));
 	
 	if (d <= (r1+r2) and d >= abs(r1-r2)){
 		double l = (r1*r1 - r2*r2 + d*d) / (2*d);

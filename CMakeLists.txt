@@ -9,7 +9,7 @@ find_package(project_interface REQUIRED )
 
 ## Specify additional locations of header files
 include_directories(
- include 
+ include
  ${OpenCV_INCLUDE_DIRS}
  ${project_interface_INCLUDE_DIRS}
 )
@@ -26,5 +26,5 @@ add_library(student SHARED
 )
 
 target_link_libraries(student
-  ${OpenCV_LIBRARIES}  
+  ${OpenCV_LIBRARIES}
 )

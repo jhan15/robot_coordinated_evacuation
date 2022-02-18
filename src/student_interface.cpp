@@ -5,18 +5,18 @@
 #include <sstream>
 #include <iterator>
 #include <string> 
-
+#include "structs.h"
 #include <cmath>
 #include "plot.hpp"
-#include "dubins.h"
-#include "collision.hpp"
 #include "inflate_objects.hpp"
 #include "vertical_cell_decomposition.hpp"
 #include "motion_planning.hpp"
 
 
-int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
-bool plot_a = false;
+int enlarge = 600; // for plotting purposes
+bool plot_a = true; // activate the plots
+bool debug = true; // activate print outs
+
 
 namespace student {
 
@@ -73,14 +73,17 @@ namespace student {
                 const std::vector<Polygon>& gate_list,
                 const std::vector<float> x, const std::vector<float> y, const std::vector<float> theta,
                 std::vector<Path>& path, const std::string& config_folder){
+    
     // *** Parameters tuning ***
     float Kmax_start = 12.0; //curvature
     float Kmax_end = 20.0;
     float Kmax_incrument = 5;
-    std::vector<float> Kmax = {Kmax_start,Kmax_start,Kmax_start};
     float inflate_value = 40; //inflate value
+    float offset_gate_width = -0.05; // distance between robots at the gate
+    float offset_away_from_gate = 0.04;  // endpoint distance away from the gate
+    float gamma = 0.01;  // cost decrease [look_ahead_optimize] on distance the further ahead you're looking
 
-
+    std::vector<float> Kmax = {Kmax_start,Kmax_start,Kmax_start};
     cout << "printing points from path " << endl;
     for (int i = 0 ; i < path[0].size();i++){
       cout << path[0].points[i].x << " , " << path[0].points[i].x << endl;
@@ -161,7 +164,7 @@ namespace student {
     float y_limit_upper = max(max(boundary[0].y, boundary[1].y), max(boundary[2].y, boundary[3].y));
 
     std::vector<SEGMENT> boundary_lines = get_boundary_lines(boundary);
-    std::vector<POINT> end_points = offset_end_points (boundary_lines,robots_number, end_point);
+    std::vector<POINT> end_points = offset_end_points (boundary_lines,robots_number, end_point,offset_gate_width,offset_away_from_gate);
 
     // finding the vertical lines
     std::vector< SEGMENT > open_line_segments;
@@ -206,10 +209,7 @@ namespace student {
     std::vector<std::vector<POINT>> *graph_option = &graph_vertices;
     std::vector<bool> done(false, robots_number);
 
-    // parameters for the optimize look ahead
-    // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
     std::vector<int> look_ahead = {0,0,0}; // how many points ahead current point is allowed to look
-    float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
 
     std::vector<int> reduce_opt = {0, 0, 0}; // reduction flags for each path
     std::vector<int> saved_reduce_opt = {0,0,0}; // to save the previous state of the reduction flags
@@ -275,45 +275,23 @@ namespace student {
           graph = graph_construction(graph_vertices[robot], graph_edges[robot]);
           //finding a path using breadth first search
           // my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
-          my_paths[robot] = findpaths(graph,graph_vertices[robot].size()-2, graph_vertices[robot].size()-1,path_count);
-          cout << "found " << my_paths[robot].size() << "paths for robot: " << robot << endl;
+          my_paths[robot] = bfs_multiple(graph,graph_vertices[robot].size()-2, graph_vertices[robot].size()-1,path_count);
+          if(debug){cout << "found " << my_paths[robot].size() << "paths for robot: " << robot << endl;}
           my_path[robot] = my_paths[robot][graph_number[robot]];
           look_ahead[robot] = my_path[robot].size() - reduce_opt[robot];
-          cout << "robot (" << robot<< ") look_ahead: " << look_ahead[robot] << "; my_path size: " << my_path[robot].size() << endl;
           if(look_ahead[robot] == 0) {graph_number[robot] +=1;}
           optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices[robot],obstacles, look_ahead[robot],gamma);
           only_once[robot] = false;
         }
-
-        // not needed - > extra computation for no reason
-
-        /*separating only the graph vertices which belong to the path for optimization purposes
-        new_graph_vertices.clear();
-        for(int i = 0 ; i < my_path[robot].size(); i++){
-          new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
-        }
-        //optimizing the graph
-        // std::vector< std::vector<int> >  optimized_graph;
-        // optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
-
-        //calculating the optimized path using breadth first search
-        // optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
-        */
         
-        cout << "robot " << robot << " saved_op : " << saved_reduce_opt[robot] << " reduced op: " << reduce_opt[robot] << endl;
         curr_size = optimized_path_look_ahead[robot].size();
         // while loop to keep reducing the look ahead for the targeted path until a new point emerges
         while (curr_size == optimized_path_look_ahead[robot].size() && saved_reduce_opt[robot]!=reduce_opt[robot]){
-          cout << "while loop for robot: " << robot << endl;
           look_ahead[robot] = my_path[robot].size() - reduce_opt[robot];
           if(look_ahead[robot] < 0) {look_ahead[robot]=0;}
-          cout << "robot (" << robot<< ") look_ahead: " << look_ahead[robot] << "; my_path size: " << my_path[robot].size() << endl;
-          cout << "last_opt: " << last_opt[robot] << endl;
           if(look_ahead[robot] == 0 && !last_opt[robot]) {
-            cout << "-------------triggered-------------" << endl;
             graph_number[robot] += 1;
             switch_path[robot] = (graph_number[robot] <= my_paths[robot].size()-1);
-            cout << "-----------switch path: " << switch_path[robot] << endl;
             if(switch_path[robot]){
               my_path[robot] = my_paths[robot][graph_number[robot]];
               reduce_opt[robot]=0;
@@ -334,12 +312,14 @@ namespace student {
         saved_reduce_opt[robot] = reduce_opt[robot];
 
         //printing and plotting the results
-        // cout << "RESULTS FOR ROBOT " << robot << endl;
-        // print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
-        //            optimized_graph, my_path[robot], optimized_path[robot], path_points[robot]);
+        if(debug){
+          cout << "RESULTS FOR ROBOT " << robot << endl;
+          print_data(boundary, start_point[robot], end_points[robot], obstacles, graph_vertices[robot],graph,
+                     my_path[robot], (*path_option)[robot], path_points[robot]);
+        }
         if(plot_a){
-        plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices[robot],my_path[robot],(*graph_option)[robot],
-                  (*path_option)[robot]); }
+          plot_map(plot, robot+1,sorted_vertices, cells, start_point[robot], end_points[robot], graph, graph_vertices[robot],my_path[robot],(*graph_option)[robot],
+                    (*path_option)[robot]); }
       
       }    
 

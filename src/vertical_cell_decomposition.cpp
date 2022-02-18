@@ -1,17 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <math.h>
-#include <algorithm>
-#include "dubins.h"
 #include "vertical_cell_decomposition.hpp"
-#include <bits/stdc++.h>
-	
-using namespace std;
 
-
+/* function to sort the vertices of all the obsticals based on an increasing x axis
+takes the obstacles, an empty sorted vertices list and the total count of the vertices
+returns the sorted vertices full*/
 std::vector<POINT> sort_vertices(std::vector< std::vector<POINT> > obstacles, std::vector<POINT> sorted_vertices, int vertices_num) {
 
     int add_to_list;
@@ -44,11 +35,10 @@ std::vector<POINT> sort_vertices(std::vector< std::vector<POINT> > obstacles, st
         }             
       } 
     }
-    
     return sorted_vertices;
 }
 
-
+/* function to add the first point back to the vector of the polygon to account for closing the polygon */
 std::vector< std::vector<POINT> > close_polygons (std::vector< std::vector<POINT> > polygons) {
     for(int polygon = 0; polygon < polygons.size(); polygon++) {
       //check if it has already been added
@@ -59,27 +49,7 @@ std::vector< std::vector<POINT> > close_polygons (std::vector< std::vector<POINT
     return polygons;
 }
 
-
-POINT intersection_trial(SEGMENT sigment1, SEGMENT sigment2){
-    POINT intersection_pt;
-    boost::geometry::model::linestring<point_xy> line1, line2;
-    typedef boost::geometry::model::segment<point_xy> Segment;
-    Segment AB( point_xy(sigment1.a.x,sigment1.a.y), point_xy(sigment1.b.x,sigment1.b.y) );
-    Segment CD( point_xy(sigment2.a.x,sigment2.a.y), point_xy(sigment2.b.x,sigment2.b.y) );
-
-    std::vector<point_xy> result;
-    boost::geometry::intersection(AB, CD,result);
-
-    if (result.size()>0){
-        intersection_pt = {float(boost::geometry::get<0>(result[0])),float(boost::geometry::get<1>(result[0]))};
-    }
-    else{
-        intersection_pt = {-1,-1};
-    }
-    return intersection_pt;
-}
-
-
+/* function to find the map's vertical lines based on the vertices of the obsticale */
 std::vector< SEGMENT > find_lines(std::vector<POINT> sorted_vertices, std::vector< std::vector<POINT> > obstacles, float y_limit_lower, float y_limit_upper){
     
     SEGMENT curr_segment;
@@ -87,13 +57,11 @@ std::vector< SEGMENT > find_lines(std::vector<POINT> sorted_vertices, std::vecto
     POINT temp_point;
     std::vector< SEGMENT > open_line_segments;
 
-    float prev_x = -1;
 
     for(const POINT& pt : sorted_vertices) {
-        prev_x = pt.x;
         int up = 0;
         int down = 0;
-        int break_now = 0;
+        bool break_now = false;
         POINT lower_obs_pt;
         POINT upper_obs_pt;
         POINT intersection_point;
@@ -108,78 +76,42 @@ std::vector< SEGMENT > find_lines(std::vector<POINT> sorted_vertices, std::vecto
         curr_segment.b = temp_point;
         upper_obs_pt = temp_point;
 
-        for(int obs = 0; obs < obstacles.size(); obs++) { 
-            for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
-                temp_segment.a = obstacles[obs][vertex];
-                temp_segment.b = obstacles[obs][vertex + 1];
+        // go throug all the vertices of the obstacles to check if they intersect with any
+        // other obstical lines
+        for(int obs = 0; obs < obstacles.size()&&!break_now; obs++) { 
+          for(int vertex = 0; vertex < obstacles[obs].size()-1&&!break_now; vertex++) {
+            temp_segment.a = obstacles[obs][vertex];
+            temp_segment.b = obstacles[obs][vertex + 1];
+            // returns -1 if not intersection
+            intersection_point = segment_intersection(curr_segment, temp_segment);
 
-                // FOR DEBUG
-                // print the horizontal lines and the current obstacle segment being checked
-                // int output7 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-                // int output8 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-                // int output9 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-                // auto color_rand = cv::Scalar(output7,output8,output9);
-                // cv::line(plot, cv::Point2f(curr_segment.a.x*enlarge,curr_segment.a.y*enlarge), cv::Point2f(curr_segment.b.x*enlarge,curr_segment.b.y*enlarge), color_rand, 2);
-                // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 2);
-                // cv::imshow("Clipper", plot);
-                // cv::waitKey(0);
-                // std::cout << "current point: " << "( " << pt.x << ","<< pt.y << ")" << std::endl;
-
-                intersection_point = intersection_trial(curr_segment, temp_segment);
-
-                if(intersection_point.x != -1){ 
-                    //FOR DEBUG
-                    // printing the intersection points of the vertical lines with the obstacles and showing whats left from them
-                    // cv::Point2f point_center2(pt.x*enlarge,pt.y*enlarge);
-                    // std::string text = std::to_string(pt.obs);
-                    // putText(plot, text, point_center2, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-                    // cv::Point2f point_center(intersection_point.x*enlarge,intersection_point.y*enlarge);
-                    // cv::circle(plot, point_center, 5,cv::Scalar( 0, 10, 125 ),2);
-                    // cv::imshow("Clipper", plot);
-                    // cv::waitKey(0);
-                    // std::cout << "temp_segment.a (" << temp_segment.a.x << " , " << temp_segment.a.y << " )" << endl;
-                    // std::cout << "temp_segment.b (" << temp_segment.b.x << " , " << temp_segment.b.y << " )"<< endl;
-                    // std::cout << "curr_segment.a (" << curr_segment.a.x << " , " << curr_segment.a.y << " )"<< endl;
-                    // std::cout << "curr_segment.b (" << curr_segment.b.x << " , " << curr_segment.b.y << " )"<< endl;
-                    // std::cout << "intersection_point (" << intersection_point.x << " , " << intersection_point.y << " )"<< endl;
-                    if(obs == pt.obs) {
-                        if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
-                            if(intersection_point.y > pt.y) {up = 1;}
-                            if(intersection_point.y < pt.y) {down = 1;}
-                        }
-                    }
-                    else {
-                        if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
-                            if((up == 0) && (intersection_point.y > pt.y) && (intersection_point.y < upper_obs_pt.y)) {
-                                upper_obs_pt = intersection_point;
-                            }
-                            if((down == 0) && (intersection_point.y < pt.y) && (intersection_point.y > lower_obs_pt.y)) {
-                                lower_obs_pt = intersection_point;
-                            }
-                        }
-                    }
+            if(intersection_point.x != -1){ 
+              // check if the current vertex is from the current obstacle
+              if(obs == pt.obs) {
+                // check if the intersection point is not the current point
+                if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
+                    if(intersection_point.y > pt.y) {up = 1;}
+                    if(intersection_point.y < pt.y) {down = 1;}
                 }
-
-                if(up && down) {
-                    break_now = 1;
-                    break;
+              }
+              else {
+                if((intersection_point.x != pt.x) || (intersection_point.y != pt.y)) {
+                  // make the intersection point the upper point of the vertical line
+                  if((up == 0) && (intersection_point.y > pt.y) && (intersection_point.y < upper_obs_pt.y)) {
+                      upper_obs_pt = intersection_point;
+                  }
+                  // make the intersection point the lower point of the vertical line
+                  if((down == 0) && (intersection_point.y < pt.y) && (intersection_point.y > lower_obs_pt.y)) {
+                      lower_obs_pt = intersection_point;
+                  }
                 }
+              }
             }
-        
-            if(break_now) {break;}
+            if(up && down) {
+              break_now = true;
+            }
+          }
         }    
-        
-        // FOR DEBUG
-        // printing the vertical lines
-        //if(down == 0){
-        //    cv::line(plot, cv::Point2f(lower_obs_pt.x*enlarge,lower_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
-        //}
-        //if(up == 0){
-        //    cv::line(plot, cv::Point2f(upper_obs_pt.x*enlarge,upper_obs_pt.y*enlarge), cv::Point2f(pt.x*enlarge,pt.y*enlarge), cv::Scalar(0,255,0), 1);
-        //}
-        // cv::imshow("Clipper", plot);
-        // cv::waitKey(0);
-
         temp_point = {-1,-1};
         temp_segment = {temp_point,temp_point};
 
@@ -198,41 +130,37 @@ std::vector< SEGMENT > find_lines(std::vector<POINT> sorted_vertices, std::vecto
         } 
         open_line_segments.push_back(temp_segment);
     }
-        // FOR DEBUG
-        // print out the open line segments
-        // std::cout << "open line segments:" << std::endl;
-        // for(int i = 0; i < open_line_segments.size(); i++){
-        //  std::cout << "seg # "<< i << " A: x=" << open_line_segments[i].a.x << " y=" << open_line_segments[i].a.y << " B: x=" << open_line_segments[i].b.x << " y=" << open_line_segments[i].b.y << std::endl; 
-        // }
-
     return open_line_segments;
 }
 
-
-//Finding the centroid of a list of vertices
+/* Finding the centroid of a list of vertices*/
 POINT centroid(std::vector<POINT> vertices) {   
+  POINT centroid_point = {-1,-1};
+  int num = vertices.size();
+  float sum_x = 0;
+  float sum_y = 0;
 
-    POINT centroid_point = {-1,-1};
-    int num = vertices.size();
-    float sum_x = 0;
-    float sum_y = 0;
+  if(num == 0) {
+      return centroid_point;
+  }
 
-    if(num == 0) {
-        return centroid_point;
-    }
+  for(int vert_idx = 0; vert_idx < num; vert_idx++) {
+      sum_x += vertices[vert_idx].x;
+      sum_y += vertices[vert_idx].y;
+  }
+  centroid_point = {sum_x/num,sum_y/num};
 
-    for(int vert_idx = 0; vert_idx < num; vert_idx++) {
-        sum_x += vertices[vert_idx].x;
-        sum_y += vertices[vert_idx].y;
-    }
-    //centroid_point.x = (int(0.5 + sum_x/num));
-    //centroid_point.y = (int(0.5 + sum_y/num));
-    centroid_point = {sum_x/num,sum_y/num};
-
-    return centroid_point;
+  return centroid_point;
 }
-
-
+/* function to find the cells based on the open line segments found from the vertical lines
+creates categories of vertices:
+-> blocked from top
+-> blocked from bottom
+-> free from both sides
+-> completely blocked
+based on the category a 4 point cell is formed using the current and the next vertices
+of the open lines segments. In addition, A list of lines and trapazoids are generated
+to later check them for collision */
 std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segments, std::vector<POINT> sorted_vertices, std::vector< std::vector<POINT> > obstacles){
     POINT temp_point;
     SEGMENT temp_segment;
@@ -245,17 +173,14 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
     std::vector<SEGMENT> lines_to_check;
     std::vector<int> group;
     std::vector< std::vector<POINT> > trapezoids;
-    std::vector<POINT> temp_points1;
-    std::vector<POINT> temp_points2;
+    std::vector<POINT> temp_points;
     std::vector< std::vector<POINT> > cells;
-    int break_now;
     std::vector<int> done;
     bool extra_search = true; // to allow for adding extra trapazoids when next two segements have same x
 
     for(int i = 0; i < open_line_segments.size(); i++) {
       curr_segment = open_line_segments[i];
       curr_vertex = sorted_vertices[i];
-      break_now = 0;
       done = {0,0,1};
 
       // a is lower limit , b is upper limit
@@ -273,7 +198,6 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
       int counter = 0;
       for(int j = i+1; j < open_line_segments.size(); j++) {
         counter +=1;
-        // std::cout << "the done status for segment " << i << " is: " << done[0] << done[1] << done[2] << " iteration:" << counter << std::endl;
         lines_to_check.clear();
         group.clear();
         trapezoids.clear();
@@ -291,32 +215,14 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
         double_check = next_segment.a.x != -1 && next_segment.b.x != -1;
         // if not blocked from the bottom
         if(done[0] == 0) {
-          // cout << "--------cur seg is not blocked from bottom----------" << endl;
-          // std::cout << "test -> done[0]  == 0 [not blocked from the bottom" << std::endl;
+          // cur seg is not blocked from bottom
           // and the next vertex is free from both sides
           if(double_check) {
-            // cout << "--next seg is free" << endl;         
+            //--next seg is free         
             temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
-            group.push_back(0);
-
-            // FOR DEBUG
-            // print debug temp points
-            // std::cout << "temp_points1: (" << temp_points1[0].x << " , " << temp_points1[0].y << ") , (" << temp_points1[1].x << " , " << temp_points1[1].y << ")" << std::endl;
-            // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // auto color_rand = cv::Scalar(output4,output5,output6);
-            // cv::Point2f point_center(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge);
-            // cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8);
-            // cv::Point2f point_center11(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge);
-            // cv::circle(plot, point_center11, 5,color_rand,cv::FILLED,cv::LINE_8);  
-            // cv::line(plot, cv::Point2f(temp_points1[0].x*enlarge,temp_points1[0].y*enlarge), cv::Point2f(temp_points1[1].x*enlarge,temp_points1[1].y*enlarge), color_rand, 2);
-            // cv::line(plot, cv::Point2f(temp_points2[0].x*enlarge,temp_points2[0].y*enlarge), cv::Point2f(temp_points2[1].x*enlarge,temp_points2[1].y*enlarge), color_rand, 2);
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0); 
-            
+            group.push_back(0);            
             //.a remains the same        
             temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
@@ -326,29 +232,27 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
           }
           // if next segment is not blocked from the bottom
           else if(next_segment.a.x != -1) {
-            // cout << "--next seg is not blocked from bottom" << endl;       
+            //--next seg is not blocked from bottom   
             temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
             group.push_back(0);
             // trapezoids
-            temp_points1.clear();
             trapezoids.push_back({curr_segment.a,next_segment.a,next_vertex,curr_vertex});
             if(extra_search){
               if(next_two_seg_same_x && (next_next_segment.b.x != -1) && (next_next_segment.a.x == -1)){
-                // cout << "--next next seg is not blocked from top" << endl;
+                //--next next seg is not blocked from top
                 temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
                 temp_segment.b = centroid({next_next_segment.b,next_next_vertex}); 
                 lines_to_check.push_back(temp_segment);
                 group.push_back(0);
-                temp_points1.clear();
                 trapezoids.push_back({curr_segment.a,next_next_vertex,next_next_segment.b,curr_vertex});              
               }
             }
           }
           //if the next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
-            // cout << "--next seg is not blocked from top" << endl;       
+            //--next seg is not blocked from top    
             temp_segment.a = centroid({curr_segment.a,curr_vertex}); 
             temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
@@ -375,10 +279,10 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
         }
         // not blocked from the bottom
         if(done[1] == 0) {
-          // cout << "--------cur seg is not blocked from top----------" << endl;
-          // if next segment is free from both sides
+          //cur seg is not blocked from top
+          //if next segment is free from both sides
           if(double_check) {
-            // cout << "--next seg is free" << endl;        
+            //--next seg is free        
             temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
@@ -391,7 +295,7 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
           }
           // if next segement not blocked from the bottom
           else if(next_segment.a.x != -1) {
-            // cout << "--next seg is not blocked from bottom" << endl;       
+            //--next seg is not blocked from bottom      
             temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
             temp_segment.b = centroid({next_segment.a,next_vertex}); 
             lines_to_check.push_back(temp_segment);
@@ -399,7 +303,7 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             trapezoids.push_back({curr_vertex,next_segment.a,next_vertex,curr_segment.b});
             if(extra_search){
               if(next_two_seg_same_x && (next_next_segment.b.x != -1)  && (next_next_segment.a.x == -1)){
-                // cout << "--next next seg is not blocked from top" << endl;
+                //--next next seg is not blocked from top
                 temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
                 temp_segment.b = centroid({next_next_segment.b,next_next_vertex});
                 lines_to_check.push_back(temp_segment);
@@ -410,7 +314,7 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
           }
           // if next segment is not blocked from the top
           else if(next_segment.b.x != -1) {
-            // cout << "--next seg is not blocked from top" << endl;         
+            //--next seg is not blocked from top     
             temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
             temp_segment.b = centroid({next_segment.b,next_vertex}); 
             lines_to_check.push_back(temp_segment);
@@ -419,7 +323,7 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
 
             if(extra_search){
               if(next_two_seg_same_x && (next_next_segment.a.x != -1)  && (next_next_segment.b.x == -1)){
-                // cout << "--next next seg is not blocked from bottom" << endl;
+                //--next next seg is not blocked from bottom
                 temp_segment.a = centroid({curr_segment.b,curr_vertex}); 
                 temp_segment.b = centroid({next_next_segment.a,next_next_vertex});
                 lines_to_check.push_back(temp_segment);
@@ -464,7 +368,6 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             lines_to_check.push_back(temp_segment);
             group.push_back(2);
 
-            temp_points1.clear();
             trapezoids.push_back({curr_vertex,next_vertex,next_segment.b});
           }
           else {
@@ -475,61 +378,14 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
             trapezoids.push_back({curr_vertex,next_vertex});
           }
         }
-        // FOR DEBUG
-        // print lines_to_check
-        // for(unsigned j=0; j<lines_to_check.size(); j++){
-        //   int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-        //   auto color_rand = cv::Scalar(output4,output5,output6);
-        //   cv::line(plot, cv::Point2f(lines_to_check[j].a.x*enlarge,lines_to_check[j].a.y*enlarge), cv::Point2f(lines_to_check[j].b.x*enlarge,lines_to_check[j].b.y*enlarge), color_rand, 1);           
-        //   cv::imshow("Clipper", plot);
-        //   cv::waitKey(0); 
-        // } 
-        // print for trapezoids
-        // for (unsigned j=0; j<trapezoids.size(); j++) {
-        //     // std::cout << "test test" << std::endl;
-        //     cv::line(plot, cv::Point2f(trapezoids[j][0].x*enlarge,trapezoids[j][0].y*enlarge), cv::Point2f(trapezoids[j][1].x*enlarge,trapezoids[j][1].y*enlarge), cv::Scalar(60,110,23), 2);
-        //     cv::line(plot, cv::Point2f(trapezoids[j][1].x*enlarge,trapezoids[j][1].y*enlarge), cv::Point2f(trapezoids[j][2].x*enlarge,trapezoids[j][2].y*enlarge), cv::Scalar(60,110,23), 2);
-        //     cv::line(plot, cv::Point2f(trapezoids[j][2].x*enlarge,trapezoids[j][2].y*enlarge), cv::Point2f(trapezoids[j][0].x*enlarge,trapezoids[j][0].y*enlarge), cv::Scalar(60,110,23), 2);
-        // }
-        // cv::imshow("Clipper", plot);
-        // cv::waitKey(0);
-
         std::vector<int> temp_to_remove;
         for(int line = 0; line < lines_to_check.size(); line++) {  
-          // for debugging
-          // reset_obs_plot(plot,obstacles);
           int no_intersection[3] = {1, 1, 1};           
           for(int obs = 0; obs < obstacles.size(); obs++) {              
             for(int vertex = 0; vertex < obstacles[obs].size()-1; vertex++) {
               temp_segment.a = obstacles[obs][vertex];
               temp_segment.b = obstacles[obs][vertex+1];          
-              temp_point = intersection_trial(lines_to_check[line], temp_segment);
-
-              // FOR DEBUG
-              // print the intersection prosedure
-              // std::cout << "-- (before recall) intersection_point: " << "(" << temp_point.x*enlarge << " , " << temp_point.y*enlarge << ")" << std::endl;
-              // temp_point = segment_intersection(lines_to_check[line], temp_segment,true);
-              // std::cout << "-- intersect data after retest --" << std::endl;
-              // bool _check = intersect(temp_segment.a,temp_segment.b,lines_to_check[line].a,lines_to_check[line].b,true);
-              // std::cout << "-- intersect double check: " << _check << std::endl;
-              // std::cout << "-- intersection_point: " << "(" << temp_point.x*enlarge << " , " << temp_point.y*enlarge << ")" << std::endl;
-              // std::cout << "-- obstacle segment-p1: " << "(" << temp_segment.a.x*enlarge << " , " << temp_segment.a.y*enlarge << ")" << std::endl;
-              // std::cout << "-- obstacle segment-p2: " << "(" << temp_segment.b.x*enlarge << " , " << temp_segment.b.y*enlarge << ")" << std::endl;
-              // std::cout << "-- line segment-p1: " << "(" << lines_to_check[line].a.x*enlarge << " , " << lines_to_check[line].a.y*enlarge << ")" << std::endl;
-              // std::cout << "-- line segment-p2: " << "(" << lines_to_check[line].b.x*enlarge << " , " << lines_to_check[line].b.y*enlarge << ")" << std::endl;
-              // std::cout<< "-------------------------" << std::endl;
-              // int output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // int output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // int output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-              // auto color_rand = cv::Scalar(output4,output5,output6);
-              // cv::Point2f point_center(temp_point.x*enlarge,temp_point.y*enlarge);
-              // cv::circle(plot, point_center, 5,color_rand,2);//cv::Scalar( 0, 10, 125 ),2);
-              // cv::line(plot, cv::Point2f(lines_to_check[line].a.x*enlarge,lines_to_check[line].a.y*enlarge), cv::Point2f(lines_to_check[line].b.x*enlarge,lines_to_check[line].b.y*enlarge), color_rand, 2);           
-              // cv::line(plot, cv::Point2f(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge), cv::Point2f(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge), color_rand, 2);           
-              // cv::imshow("Clipper", plot);
-              // cv::waitKey(0);
+              temp_point = segment_intersection(lines_to_check[line], temp_segment);
               
               if(temp_point.x != -1) {
                 no_intersection[group[line]] = 0;
@@ -544,14 +400,10 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
                   temp_to_remove.push_back(line);
                 } 
               }
-            // std::cout << "-- intersection_point: " << "(" << temp_point.x << " , " << temp_point.y << ")" << std::endl;
             }      
-          }
-          
-          // std::cout << "-- no_intersection stat: " << no_intersection[0] << " , "  << no_intersection[1] << " , " << no_intersection[2] << std::endl;
+          }  
           if(no_intersection[group[line]] == 1) {done[group[line]] = 1;}
         }
-
         for(int line = 0; line < lines_to_check.size(); line++) {
           int found = 0;
           for(int idx = 0; idx < temp_to_remove.size(); idx++) {
@@ -562,26 +414,6 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
           }
           if(found == 0) {
             cells.push_back(trapezoids[line]);
-
-            // FOR DEBUG
-            // print the cells one by one
-            // int output4 = 0;
-            // int output5 = 0;
-            // int output6 = 0;
-            // output4 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // output5 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // output6 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-            // auto color_rand = cv::Scalar(output4,output5,output6);
-            // for(unsigned j=1; j<cells[cells.size()-1].size(); j++){
-            //   cv::Point2f point_center(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge);
-            //   cv::circle(plot, point_center, 5,color_rand,cv::FILLED,cv::LINE_8); 
-            //   cv::line(plot, cv::Point2f(cells[cells.size()-1][j-1].x*enlarge,cells[cells.size()-1][j-1].y*enlarge), cv::Point2f(cells[cells.size()-1][j].x*enlarge,cells[cells.size()-1][j].y*enlarge), color_rand, 2);
-            //   if (j == cells[cells.size()-1].size() -1){
-            //     cv::line(plot, cv::Point2f(cells[cells.size()-1][j].x*enlarge,cells[cells.size()-1][j].y*enlarge), cv::Point2f(cells[cells.size()-1][0].x*enlarge,cells[cells.size()-1][0].y*enlarge), color_rand, 2);
-            //   }
-            // }
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0);  
           } 
         }
 
@@ -591,7 +423,7 @@ std::vector< std::vector<POINT> > find_cells(std::vector<SEGMENT> open_line_segm
     return cells;
 }
 
-
+/* calculates the area occupied by the polygon */
 float polygon_area(std::vector<POINT> vertices, int vertices_num) {
     float area = 0;
 
@@ -605,24 +437,8 @@ float polygon_area(std::vector<POINT> vertices, int vertices_num) {
     return area;
 }
 
-
+/* if there are any overlaping between the cells, merge them together */
 std::vector< std::vector<POINT> > merge_polygons(std::vector<std::vector<POINT>> cells) {
-    
-    //I don't think we ever use tri and other cells so I don't see why we need this
-    //to vring it back just uncomment and change cells to quad_cells starting from the end of the commented out section
-    /*
-    std::vector< std::vector<POINT> > quad_cells; 
-    
-    std::vector< std::vector<POINT> > tri_cells;
-    std::vector< std::vector<POINT> > other_cells;
-
-    for(int cell = 0; cell < cells.size(); cell++) {
-      if(cells[cell].size() > 3) {quad_cells.push_back(cells[cell]);}
-      else if(cells[cell].size() == 3) {tri_cells.push_back(cells[cell]);}
-      else {other_cells.push_back(cells[cell]);}
-    }
-    */
-
     POINT temp_point;
     std::vector<int> quads_to_remove;
     std::vector< std::vector<POINT> > quads_to_add;
@@ -677,11 +493,6 @@ std::vector< std::vector<POINT> > merge_polygons(std::vector<std::vector<POINT>>
     
     sort(quads_to_remove.begin(), quads_to_remove.end());
 
-    // for (int i = 0 ; i < quads_to_remove.size();i++){
-    //   std::cout << "quads to remove: " << quads_to_remove[i] << std::endl;
-    // }
-
-
     quads_to_remove.erase(unique(quads_to_remove.begin(), quads_to_remove.end()), quads_to_remove.end());
 
     for(int quad = 0; quad < quads_to_remove.size(); quad ++) {
@@ -709,16 +520,11 @@ std::vector< std::vector<POINT> > merge_polygons(std::vector<std::vector<POINT>>
     sort(quads_to_remove.begin(), quads_to_remove.end());
     quads_to_remove.erase(unique(quads_to_remove.begin(), quads_to_remove.end()), quads_to_remove.end());
  
-    // for (int i = 0 ; i < quads_to_remove.size();i++){
-    //   std::cout << "quads to remove: " << quads_to_remove[i] << std::endl;
-    // }
-
     for(int quad = 0; quad < quads_to_remove.size(); quad ++) {
       cells.erase(cells.begin() + quads_to_remove[quad] - quad); //-quad because after deletion the indices shift
     } 
 
     //One more pass to remove extra quads generated because of cross - segments
-
     quads_to_remove.clear();
     for(int quad1 = 0; quad1 < cells.size(); quad1 ++) {
       for(int quad2 = 0; quad2 < cells.size(); quad2 ++) {
@@ -741,7 +547,7 @@ std::vector< std::vector<POINT> > merge_polygons(std::vector<std::vector<POINT>>
     return cells;
 }
 
-
+/* adding the boundaries to the outside cells */
 std::vector<std::vector<POINT>> boundary_cells(std::vector<POINT> boundary, std::vector<std::vector<POINT>> cells, std::vector<POINT> sorted_vertices, float y_limit_lower, float y_limit_upper) {
     
     POINT temp_point;
@@ -785,7 +591,8 @@ std::vector<std::vector<POINT>> boundary_cells(std::vector<POINT> boundary, std:
     return cells;
 }
 
-
+/* creates vertices on the borders of the neighbouring cells and in the middle of each cell
+then connects the applicable vertices together to create a graph */
 tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vector<POINT> > cells) {
     std::vector<int> same_boundary;
     std::vector<POINT> graph_vertices;
@@ -794,8 +601,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
     POINT curr_centroid_vertex;
     POINT temp_edge_middle;
     POINT temp_point;
-    std::vector<POINT> temp_points1;
-    std::vector<POINT> temp_points2;
+    std::vector<POINT> temp_points;
     int inside;
     int place; 
     int place1;
@@ -817,9 +623,9 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
         }
       }
 
-      temp_points1.clear();
-      for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(cells[cell1][pt]);}
-      centroid_vertex = centroid(temp_points1);
+      temp_points.clear();
+      for(int pt = 0; pt < 4; pt++) {temp_points.push_back(cells[cell1][pt]);}
+      centroid_vertex = centroid(temp_points);
       inside = 0;
       for(int vertex = 0; vertex < graph_vertices.size(); vertex++) {
         if(centroid_vertex.x == graph_vertices[vertex].x && centroid_vertex.y == graph_vertices[vertex].y) { 
@@ -834,10 +640,10 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
       }
 
       if(same_boundary.size() == 1) {
-        temp_points1.clear();
-        temp_points1.push_back(cells[cell1][1]);
-        temp_points1.push_back(cells[cell1][2]);
-        temp_edge_middle = centroid(temp_points1);
+        temp_points.clear();
+        temp_points.push_back(cells[cell1][1]);
+        temp_points.push_back(cells[cell1][2]);
+        temp_edge_middle = centroid(temp_points);
         graph_vertices.push_back(temp_edge_middle);
         n = graph_vertices.size() - 1;
       
@@ -852,9 +658,9 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
           graph_edges.push_back(temp_point);
         }
 
-        temp_points1.clear();
-        for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(cells[same_boundary[0]][pt]);}
-        curr_centroid_vertex = centroid(temp_points1);
+        temp_points.clear();
+        for(int pt = 0; pt < 4; pt++) {temp_points.push_back(cells[same_boundary[0]][pt]);}
+        curr_centroid_vertex = centroid(temp_points);
         inside = 0;
         for(int vertex = 0; vertex < graph_vertices.size(); vertex++) {
           if(curr_centroid_vertex.x == graph_vertices[vertex].x && curr_centroid_vertex.y == graph_vertices[vertex].y) { 
@@ -884,13 +690,13 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
         if(place != -1) { use = place; }
         else { use = n; }
         for(int i = 0; i < same_boundary.size(); i ++){
-          temp_points1.clear();
-          for(int pt = 0; pt < 4; pt++) {temp_points1.push_back(cells[same_boundary[i]][pt]);}
-          curr_centroid_vertex = centroid(temp_points1);
-          temp_points1.clear();
-          temp_points1.push_back(cells[same_boundary[i]][0]);
-          temp_points1.push_back(cells[same_boundary[i]][3]);
-          temp_edge_middle = centroid(temp_points1);
+          temp_points.clear();
+          for(int pt = 0; pt < 4; pt++) {temp_points.push_back(cells[same_boundary[i]][pt]);}
+          curr_centroid_vertex = centroid(temp_points);
+          temp_points.clear();
+          temp_points.push_back(cells[same_boundary[i]][0]);
+          temp_points.push_back(cells[same_boundary[i]][3]);
+          temp_edge_middle = centroid(temp_points);
           graph_vertices.push_back(temp_edge_middle);
           place1 = graph_vertices.size() - 1;
           inside = 0;
@@ -916,47 +722,15 @@ tuple <std::vector<POINT>, std::vector<POINT>> get_graph(std::vector< std::vecto
     return make_tuple(graph_edges, graph_vertices);
 }
 
-
-float find_dist(POINT pt1, POINT pt2) {
+/* finds the euclidean distance between two points  */
+float find_distance(POINT pt1, POINT pt2) {
     return float (sqrt(pow((pt1.x - pt2.x),2) + pow(pt1.y-pt2.y,2))); 
 }
 
-
-bool check_obstruction(std::vector< std::vector<POINT> > obstacles, SEGMENT segment) {
-    int res = true;
-    int break_out = false;
-    int n;
-    SEGMENT obs_side;
-
-
-    for(std::vector<POINT> &obs : obstacles){
-        // check that the obstacle starts and ends with the same point
-        
-        if(obs[0].x != obs.back().x || obs[0].y != obs.back().y){
-            obs.push_back(obs[0]);
-        }
-        n = obs.size()-1;
-        for (int pt = 0; pt < n; pt++ ){
-            obs_side.a = obs[pt];
-            obs_side.b = obs[pt+1];
-            if(intersection_trial(segment,obs_side).x != -1){
-                res = false;
-                break_out = true;
-                break;
-            }
-        }
-        if (break_out){
-            break;
-        }
-    }
-    // std::cout << "intersection result: " << res << "\n -----" << std::endl;
-
-    return res;
-}
-
-
+/* adds the start and the target points to the graph for each robot and
+sends back a specific graph for that robot */
 tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges, POINT start_point, POINT end_point, std::vector<std::vector<POINT>> obstacles){
-    //Source
+    // start point
     int min_ind = -1; 
     float min = INFINITY;
     float dist;
@@ -968,36 +742,18 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
       temp_segment.a = start_point;
       temp_segment.b = graph_vertices[vertex];
-
-      // FOR DEBUG
-      // printing the points that are measured to the start point
-      // int output10 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // int output11 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // int output12 = 0 + (rand() % static_cast<int>(255 - 0 + 1));
-      // auto color_rand = cv::Scalar(output10,output11,output12);
-      // cv::Point2f point_center22(temp_segment.a.x*enlarge,temp_segment.a.y*enlarge);
-      // cv::circle(plot, point_center22, 2,color_rand,cv::FILLED,cv::LINE_8);
-      // cv::Point2f point_center222(temp_segment.b.x*enlarge,temp_segment.b.y*enlarge);
-      // cv::circle(plot, point_center222, 2,color_rand,cv::FILLED,cv::LINE_8);
-      // cv::imshow("Clipper", plot);
-      // cv::waitKey(0);
-
       // find the closest vertex in the graph to the start point
       if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], start_point);
-        // std::cout << "current distance: " << dist << "minimum distance: " << min << std::endl;
+        dist = find_distance(graph_vertices[vertex], start_point);
         if(dist < min) {
           min = dist;
           min_ind = vertex;
-          // std::cout << "distance: " << dist << " closest vertex: " << vertex << std::endl;
         } 
       }
     }
-
+    // there is probably an obsticale at the start point <- use another map or decrease inflation
     if(min_ind == -1){
-      throw std::logic_error( "THE START POINT IS UNREACHABLE" );
-      //std::cout << "the start point is unreachable" << std::endl;
-      //return false;
+      throw std::logic_error( "THE START POINT IS UNREACHABLE <- try reducing inflation value" );
     }
 
     graph_vertices.push_back(start_point);
@@ -1006,31 +762,25 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
     temp_point.y = m;
     graph_edges.push_back(temp_point);
 
-
-
-    // destination
+    // target point
     min_ind = -1; 
     min = INFINITY;
 
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
-      temp_segment.a = end_point; //TODO: change for more than one robot
+      temp_segment.a = end_point;
       temp_segment.b = graph_vertices[vertex];
       if(check_obstruction(obstacles, temp_segment)) {
-        dist = find_dist(graph_vertices[vertex], end_point); //TODO: change for more than one robot
+        dist = find_distance(graph_vertices[vertex], end_point);
         if(dist < min) {
           min = dist;
           min_ind = vertex;
         } 
       }
     }
-
     if(min_ind == -1){
-      throw std::logic_error( "THE END POINT IS UNREACHABLE" );
-      //std::cout << "the end point is unreachable" << std::endl;
-      //return false;
+      throw std::logic_error( "THE END POINT IS UNREACHABLE <- try reducing inflation value"  );
     }
-
-    graph_vertices.push_back(end_point); //TODO: change for more than one robot
+    graph_vertices.push_back(end_point);
     m = graph_vertices.size()-1;
     temp_point.x = min_ind;
     temp_point.y = m;
@@ -1039,7 +789,7 @@ tuple <std::vector<POINT>, std::vector<POINT>> add_start_end(std::vector<POINT> 
     return make_tuple(graph_edges, graph_vertices);
 }
 
-
+/* create the graph from the vertices and edges */
 std::vector< std::vector<int> > graph_construction(std::vector<POINT> graph_vertices, std::vector<POINT> graph_edges) {
     std::vector< std::vector<int> > graph;
     for(int vertex = 0; vertex < graph_vertices.size(); vertex ++) {
@@ -1057,7 +807,8 @@ std::vector< std::vector<int> > graph_construction(std::vector<POINT> graph_vert
     return graph;
 }
 
-
+/* a function used by bfs to back trace all the way to the beginning of the
+path once the target has been found -> returns a path that begins with the start point  */
 std::vector<int> backtrace(std::vector<int> parent, int start, int end) {
     std::vector<int> path;
     path.push_back(end);
@@ -1070,104 +821,86 @@ std::vector<int> backtrace(std::vector<int> parent, int start, int end) {
     return path;
 }
 
-
-//Breadth First Search on a graph with a given Source and Target
-std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int target) {
-    std::vector<int> path;
-    std::vector<int> visited;
-    std::vector<int> parent;
-    std::vector<int> queue;
-    int current;
-
-    for(int node = 0; node < graph.size(); node++){
-        visited.push_back(0);
-        parent.push_back(-1);
+/* function used by bfs to check if current point is already in the path 
+takes the point and the path and returns true if not found*/
+bool visit_check(int point, vector<int>& path){
+  for (int i = 0; i < path.size(); i++){
+    if (path[i] == point){
+      return false;
     }
-
-    queue.push_back(source);
-    while(queue.size() > 0){
-        // std::cout << "in queue now:" << std::endl;
-        // for (int i = 0; i<queue.size();i++){
-        //     std::cout  << queue[i] << " , ";
-        // }
-        // std::cout << "\n--------------" << std::endl;
-        current = queue[0];
-        queue.erase(queue.begin());
-        if (current == target) {
-            path = backtrace(parent, source, target);
-            return path;
-        }
-        for (int neighbor : graph[current]){
-            if(visited[neighbor] == 0){
-                visited[neighbor] = 1;
-                parent[neighbor] = current;
-                queue.push_back(neighbor);
-            }
-        }
-    }
-
-    path.push_back(-1); 
-    return path;
+  }
+  return true;
 }
-void printpath(vector<int>& path)
-{
-    cout << "path: ";
-    int size = path.size();
-    for (int i = 0; i < size; i++)
-        cout << path[i] << " ";   
-    cout << endl;
+
+/* Breadth First Search on a graph with a given Source and Target */
+std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int target) {
+  std::vector<int> path;
+  std::vector<int> visited;
+  std::vector<int> parent;
+  std::vector<int> queue;
+  int current;
+
+  for(int node = 0; node < graph.size(); node++){
+    visited.push_back(0);
+    parent.push_back(-1);
+  }
+
+  queue.push_back(source);
+  while(queue.size() > 0){
+    current = queue[0];
+    queue.erase(queue.begin());
+    if (current == target) {
+      path = backtrace(parent, source, target);
+      return path;
+    }
+    for (int neighbor : graph[current]){
+      if(visited[neighbor] == 0){
+        visited[neighbor] = 1;
+        parent[neighbor] = current;
+        queue.push_back(neighbor);
+      }
+    }
+  }
+  path.push_back(-1); 
+  return path;
 }
  
-// utility function to check if current
-// vertex is already present in path
-int isNotVisited(int x, vector<int>& path)
-{
-    int size = path.size();
-    for (int i = 0; i < size; i++)
-        if (path[i] == x)
-            return 0;
-    return 1;
-}
-
-std::vector<std::vector<int>>  findpaths(std::vector< std::vector<int> > g, int src, int dst, int path_count)
-{
-	// create a queue which stores
-	// the paths
-	queue<vector<int> > q;
+/* a bfs version that keeps searching for all the available paths
+up till a defined limit */
+std::vector<std::vector<int>> bfs_multiple(std::vector< std::vector<int> > graph, int source, int target, int path_count){
+	queue<vector<int> > point_queue;
+  // for all the paths found
   std::vector<std::vector<int>>  paths;
-	// path vector to store the current path
 	vector<int> path;
-	path.push_back(src);
-	q.push(path);
-	while (!q.empty()) {
-		path = q.front();
-		q.pop();
-		int last = path[path.size() - 1];
+  int last_added;
 
-		// if last vertex is the desired destination
-		// then print the path
-		if (last == dst){
+	path.push_back(source);
+	point_queue.push(path);
+	while (!point_queue.empty()) {
+		path = point_queue.front();
+		point_queue.pop();
+		last_added = path[path.size() - 1];
+
+		// if target found , save to the paths found list
+		if (last_added == target){
 			paths.push_back(path);
-      printpath(path);
       if(paths.size()>path_count){
         return paths;
       }
     }
-
-		// traverse to all the nodes connected to
-		// current vertex and push new path to queue
-		for (int i = 0; i < g[last].size(); i++) {
-			if (isNotVisited(g[last][i], path)) {
+		for (int i = 0; i < graph[last_added].size(); i++) {
+			if (visit_check(graph[last_added][i], path)) {
 				vector<int> newpath(path);
-				newpath.push_back(g[last][i]);
-				q.push(newpath);
+				newpath.push_back(graph[last_added][i]);
+				point_queue.push(newpath);
 			}
 		}
 	}
   return paths;
 }
 
-
+/* one of the options to optimize the path: a brute force method to connect all the points
+int the path with each other, and keep the ones that are not intersecting with anything */
 std::vector<std::vector<int>>  optimize_graph(std::vector<int> my_path, std::vector<POINT> new_graph_vertices, std::vector<std::vector<POINT>> obstacles){
     SEGMENT temp_path;
     SEGMENT temp_obs;
@@ -1185,7 +918,7 @@ std::vector<std::vector<int>>  optimize_graph(std::vector<int> my_path, std::vec
             for(int pt = 0 ; pt< obstacles[obs].size()-1;pt++){
               temp_obs.a = {obstacles[obs][pt].x,obstacles[obs][pt].y};
               temp_obs.b = {obstacles[obs][pt+1].x,obstacles[obs][pt+1].y};
-              inter_result = intersection_trial(temp_obs,temp_path);
+              inter_result = segment_intersection(temp_obs,temp_path);
               if(inter_result.x !=-1){
                 break_off = true;
                 break;
@@ -1198,22 +931,17 @@ std::vector<std::vector<int>>  optimize_graph(std::vector<int> my_path, std::vec
           if(break_off){
             continue;
           }
-          // FOR DEBUG
-          // std::cout << "vertex1: " << vertex << " vertex2: " << vertex_2 << endl;
-          // std::cout << "temp obs: ( " << temp_obs.a.x << " , " << temp_obs.a.y << " ) ( " << temp_obs.b.x <<" ," << temp_obs.b.y << " )"<< endl;
-          // std::cout << "temp obs: ( " << temp_path.a.x << " , " << temp_path.a.y << " ) ( " << temp_path.b.x <<" ," << temp_path.b.y << " )"<< endl;
-
           optimized_graph[vertex].insert(optimized_graph[vertex].begin(),vertex_2);
         }
       }
-      // std::cout << "-------------" << endl;
     }
-    // cout << "size of optimized graph: " << optimized_graph.size();
-
-
     return optimized_graph;
 }
 
+/* an optimization method that looks ahead for each point [up to a defined limit].
+it compares the distances between the current point and the number of points decided by the
+look ahead number to find out which one has the lower distance. the function uses a cost discount [tunable]
+that the further appart [in index] the points are the cheaper it is, to promote skipping points if needed*/
 std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT> graph_vertices, std::vector<std::vector<POINT>> obstacles, float look_ahead, float gamma){
   SEGMENT temp_path;
   SEGMENT temp_obs;
@@ -1232,36 +960,32 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
   if(look_ahead>my_path.size()-1){look_ahead=my_path.size()-1;}
 
   std::vector<int> optimized_path;
+  // add start point
   optimized_path.push_back(my_path[0]);
   for(int i = 0;i<my_path.size()-1;i++){
     gamma_i = 1;
-    // std::cout << "i at beginning: " << i << std::endl;
     best_distance = INFINITY;
     next_point = i+1;
     best_point = my_path[next_point];
+    // to insure that the look ahead wont exceed the size of the path
     if(i<=my_path.size()-look_ahead-1){cap = look_ahead;}else{cap= my_path.size()-1-i;}
-    // std::cout << "cap is ::: " << cap << std::endl;
     for(int j=1;j<=cap;j++){
-      // std::cout << j+i << " , " << my_path.size() << std::endl;
       break_loop= false;
-      // std::cout << "point " << i <<  " " << graph_vertices[my_path[i]].x << " , " << graph_vertices[my_path[i]].y << "point " << j+i <<  " " << graph_vertices[my_path[i+j]].x << " , " << graph_vertices[my_path[i+j]].y << std::endl;
       distance = sqrt(pow(graph_vertices[my_path[i]].x - graph_vertices[my_path[i+j]].x,2) + pow(graph_vertices[my_path[i]].y - graph_vertices[my_path[i+j]].y,2));
+      // apply a discount to the distance the further ahead you look
       distance = gamma_i * distance ;
       angle = atan2(graph_vertices[my_path[i]].y-graph_vertices[my_path[i+j]].y,graph_vertices[my_path[i]].x-graph_vertices[my_path[i+j]].x)*180/pi;
-      // std::cout << "angle" << angle<< std::endl;
-      // std::cout << "distance: " << distance << " best dissstance : " << best_distance  << " best pnt("<< next_point << std::endl;
       if(distance <= best_distance){
-        // std::cout << "less distance detected -- checking collision" << std::endl;
         temp_path.a = {graph_vertices[my_path[i]].x, graph_vertices[my_path[i]].y};
-        temp_path.b = {graph_vertices[my_path[i+j]].x, graph_vertices[my_path[i+j]].y};        
+        temp_path.b = {graph_vertices[my_path[i+j]].x, graph_vertices[my_path[i+j]].y};  
+        // if better distance found , check collision      
         for(int obs = 0 ; obs< obstacles.size();obs++){
           for(int pt = 0 ; pt< obstacles[obs].size()-1;pt++){
             temp_obs.a = {obstacles[obs][pt].x,obstacles[obs][pt].y};
             temp_obs.b = {obstacles[obs][pt+1].x,obstacles[obs][pt+1].y};
-            inter_result = intersection_trial(temp_obs,temp_path);
+            inter_result = segment_intersection(temp_obs,temp_path);
             if(inter_result.x !=-1){
               break_loop = true;
-              // std::cout << "COLLISION DETECTED" <<std::endl;
               break;
             }
           }
@@ -1273,7 +997,6 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
           continue;
         }
         else{
-          // std::cout << " NO COLLISION DETECTED" << std::endl;
           best_distance = distance;
           best_point = my_path[j+i];
           next_point = i+j;
@@ -1283,33 +1006,23 @@ std::vector<int> look_ahead_optimize(std::vector<int> my_path, std::vector<POINT
     }
     
     i = next_point-1;
-    
     optimized_path.push_back(my_path[next_point]);
-    // cv::Point2f centerCircle(opt_points[opt_points.size()-1].x*enlarge,opt_points[opt_points.size()-1].y*enlarge);
-    // std::string text = std::to_string(next_po);
-    // putText(plot, text, centerCircle, cv::FONT_HERSHEY_PLAIN, 2,  cv::Scalar(0,0,255,255));
-    // std::cout << "adding pt #: (" << next_point << ")" << graph_vertices[my_path[my_path.size()-1]].x << " , " << graph_vertices[my_path[my_path.size()-1]].y << std::endl;
-    // std::cout << "i at end: " << next_point <<  "========================" << std::endl;
-  }
-  std::cout<< "Optimized path with look ahead points: total points "<< optimized_path.size() << std::endl;
-  for(int i = 0 ; i<optimized_path.size();i++){
-    std::cout << "Point # " << i << " ( " << graph_vertices[optimized_path[i]].x << " , " << graph_vertices[optimized_path[i]].y << " )" << endl;
   }
   return optimized_path;
 }
 
+/* converts the graph indecies to actual x and y coordinates based on the recieved graph */
 std::vector<robotPos> index_to_coordinates(std::vector<int> index_path, std::vector<POINT> coordinates) {
-    std::vector<robotPos> path_points;
-    robotPos temp_pt;
-    for (unsigned i=0; i<index_path.size(); i++) {
-        temp_pt = {coordinates[index_path[i]].x, coordinates[index_path[i]].y,-1};
-        // cout << "optimized point: (x: " << temp_pt.x << " , y: "<<  temp_pt.y << " , theta: " << temp_pt.th << " ) " << endl;
-        path_points.push_back(temp_pt);
-    }
-    return path_points;
+  std::vector<robotPos> path_points;
+  robotPos temp_pt;
+  for (unsigned i=0; i<index_path.size(); i++) {
+    temp_pt = {coordinates[index_path[i]].x, coordinates[index_path[i]].y,-1};
+    path_points.push_back(temp_pt);
+  }
+  return path_points;
 }
 
-
+/* creates boundary lines from the points of the boundaries */
 std::vector<SEGMENT> get_boundary_lines(std::vector<POINT> boundary){
   std::vector<SEGMENT> boundary_lines;
   SEGMENT temp_s;
@@ -1318,37 +1031,32 @@ std::vector<SEGMENT> get_boundary_lines(std::vector<POINT> boundary){
     temp_s.a = {boundary[j].x,boundary[j].y};
     temp_s.b = {boundary[inde].x,boundary[inde].y}; 
     boundary_lines.push_back(temp_s);
-    // cout << "boundary lines: (" << boundary_lines[boundary_lines.size()-1].a.x << " , " << boundary_lines[boundary_lines.size()-1].a.y << "),(" << boundary_lines[boundary_lines.size()-1].b.x << " , " << boundary_lines[boundary_lines.size()-1].b.y << endl;
   }
   return boundary_lines;
 }
 
-
-std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines, int robots_number, std::vector<POINT>end_point){
+/* applies an offset to the endpoints based on where the gate is located [east, west, north, south]
+helps get to the end point after applying inflation on the objects and borders. it also adds
+space in the width dimension between the end points for each robot */
+std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines, int robots_number, std::vector<POINT>end_point, float offset_gate_width, float offset_away_from_gate){
   float smallest_distance= INFINITY;
   int closest_boarder=-1;
   for (int j=0 ; j<boundary_lines.size();j++){
-    cout << "boundary : (" << boundary_lines[j].a.x << " , " << boundary_lines[j].a.y << "),("<< boundary_lines[j].b.x << " , " << boundary_lines[j].b.y << endl;
     float A = end_point[0].x - boundary_lines[j].a.x;
     float B = end_point[0].y - boundary_lines[j].a.y;
     float C = boundary_lines[j].b.x - boundary_lines[j].a.x;
     float D = boundary_lines[j].b.y - boundary_lines[j].a.y;
     float dist = abs(A * D - C * B) / sqrt(C * C + D * D);
-    cout << "distance is " << dist << "for boundary :" << "( " << j << " )" << endl;
     if (dist < smallest_distance){
       smallest_distance = dist;
       closest_boarder = j;
     }
   }
-  cout << "closest boundary :"<< closest_boarder << " ," << boundary_lines[closest_boarder].a.x << " , " << boundary_lines[closest_boarder].a.y << "),("<< boundary_lines[closest_boarder].b.x << " , " << boundary_lines[closest_boarder].b.y << endl;
-
   std::vector<POINT> end_points;
   for(int rob = 0; rob < robots_number;rob++){
     end_points.push_back(end_point[0]);
   }
 
-  float offset_gate_width = -0.05;
-  float offset_away_from_gate = 0.04;
   for(int rob = 0 ; rob < robots_number; rob++){
     // 0  horizontal top
     if(closest_boarder == 0){
@@ -1360,9 +1068,7 @@ std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines, int r
     }
     // 2  horizontal bottom
     if(closest_boarder == 2){
-      cout << "original :" << end_points[rob].x << " , " << end_points[rob].y << endl;
       end_points[rob] = {end_points[rob].x+offset_gate_width,end_points[rob].y-offset_away_from_gate};
-      cout << "change to: " << end_points[rob].x+offset_gate_width << " , "<< end_points[rob].y-offset_away_from_gate << endl;
     }
     // 3  vertical left
     if(closest_boarder == 3){
@@ -1374,266 +1080,67 @@ std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines, int r
   return end_points;
 }
 
+/* for debugging purposes */
+void print_data(std::vector<POINT> boundary, POINT start_point, POINT end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector<std::vector<int>> graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points) {     
+  std::cout<<"\n>>>> Border postion:"<<std::endl;
+  for(int i = 0; i < boundary.size(); i++){
+   cout<< "x=" << boundary[i].x << " y=" << boundary[i].y << endl;
+  }
+  std::cout<<"\n>>>> Starting point:"<<std::endl;
+   cout<< "x=" << start_point.x << " y=" << start_point.y << " theta="<< start_point.theta << endl;
 
-void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, POINT end_point, std::vector< std::vector<POINT> > obstacles, std::vector<POINT> graph_vertices, std::vector< std::vector<int> > graph, std::vector<POINT> new_graph_vertices, std::vector< std::vector<int> > optimized_graph, std::vector<int> path, std::vector<int> optimized_path, std::vector<robotPos> path_points) {    
-    
-    // FOR DEBUG
-    // std::cout<<"\n>>>> Border postion:"<<std::endl;
-    // for(int i = 0; i < boundary.size(); i++){
-    //  cout<< "x=" << boundary[i].x*enlarge << " y=" << boundary[i].y*enlarge << endl;
-    // }
+  std::cout<<"\n>>>> End point:"<<std::endl;
+  cout<< "x=" << end_point.x << " y=" << end_point.y << endl;
+  std::cout<<"\n>>>> Obstacles:"<<std::endl;
+  for(int i = 0; i < obstacles.size(); i++){
+   std::cout<<"\nObstacle "<< i << endl;
+   for(int j = 0; j < obstacles[i].size(); j++){
+     cout<< "x=" << obstacles[i][j].x << " y=" << obstacles[i][j].y << endl;
+   }
+  }    
+  cout << endl;
+  cout <<"GRAPH VERTICES: "<< endl; 
+  for(int i = 0; i < graph_vertices.size(); i++){
+    cout << "(" << graph_vertices[i].x << "," << graph_vertices[i].y;
+    if(i == graph_vertices.size() - 1) { cout << ") "; }
+    else cout << "), ";
+  }
+  cout << endl;
+  cout << endl;
 
-    //FOR DEBUG
-    // std::cout<<"\n>>>> Starting points:"<<std::endl;
-    // for(int i = 0; i < start_point.size(); i++){
-    //  cout<< "x=" << start_point[i].x << " y=" << start_point[i].y << " theta="<< start_point[i].theta << endl;
-    // } 
-
-    //FOR DEBUG
-    //std::cout<<"\n>>>> End points:"<<std::endl;
-    //for(int i = 0; i < end_point.size(); i++){
-    //  cout<< "x=" << end_point[i].x << " y=" << end_point[i].y << endl;
-    //}
-
-    //FOR DEBUG
-    // std::cout<<"\n>>>> Obstacles:"<<std::endl;
-    // for(int i = 0; i < obstacles.size(); i++){
-    //  std::cout<<"\nObstacle "<< i << endl;
-    //  for(int j = 0; j < obstacles[i].size(); j++){
-    //    cout<< "x=" << obstacles[i][j].x << " y=" << obstacles[i][j].y << endl;
-    //  }
-    // }    
-    cout << endl;
-    cout <<"GRAPH VERTICES: "<< endl; 
-    for(int i = 0; i < graph_vertices.size(); i++){
-      cout << "(" << graph_vertices[i].x << "," << graph_vertices[i].y;
-      if(i == graph_vertices.size() - 1) { cout << ") "; }
-      else cout << "), ";
+  cout <<"GRAPH: "<< endl;
+  for(int j = 0; j < graph.size(); j++){
+    cout << "(";
+    for(int k = 0; k < graph[j].size(); k++) {  
+      cout << graph[j][k];
+      if(k != (graph[j].size() - 1)) {cout << ", ";}
     }
-    cout << endl;
-    cout << endl;
+    if(j == (graph.size() - 1)) {cout << ") "; }
+    else cout << "), ";
+  }
+  cout << endl;
+  cout << endl;
 
-    cout <<"NEW GRAPH VERTICES: "<< endl; 
-    for(int i = 0; i < new_graph_vertices.size(); i++){
-      cout << "(" << new_graph_vertices[i].x << "," << new_graph_vertices[i].y;
-      if(i == new_graph_vertices.size() - 1) { cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
+  cout <<"PATH: "<< endl; 
+  for(int i = 0; i < path.size(); i++){
+    cout << path[i];
+    if(i != path.size() - 1) { cout << ", "; }
+  }
+  cout << endl;
+  cout << endl;
 
-    cout <<"GRAPH: "<< endl;
-    for(int j = 0; j < graph.size(); j++){
-      cout << "(";
-      for(int k = 0; k < graph[j].size(); k++) {  
-        cout << graph[j][k];
-        if(k != (graph[j].size() - 1)) {cout << ", ";}
-      }
-      if(j == (graph.size() - 1)) {cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
+  cout <<"OPTIMIZED PATH: "<< endl; 
+  for(int i = 0; i < optimized_path.size(); i++){
+    cout << optimized_path[i];
+    if(i != optimized_path.size() - 1) { cout << ", "; }
+  }
+  cout << endl;
+  cout << endl;
 
-    cout <<"OPTIMIZED GRAPH: "<< endl;
-    for(int j = 0; j < optimized_graph.size(); j++){
-      cout << "(";
-      for(int k = 0; k < optimized_graph[j].size(); k++) {  
-        cout << optimized_graph[j][k];
-        if(k != (optimized_graph[j].size() - 1)) {cout << ", ";}
-      }
-      if(j == (optimized_graph.size() - 1)) {cout << ") "; }
-      else cout << "), ";
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"PATH: "<< endl; 
-    for(int i = 0; i < path.size(); i++){
-      cout << path[i];
-      if(i != path.size() - 1) { cout << ", "; }
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"OPTIMIZED PATH: "<< endl; 
-    for(int i = 0; i < optimized_path.size(); i++){
-      cout << optimized_path[i];
-      if(i != optimized_path.size() - 1) { cout << ", "; }
-    }
-    cout << endl;
-    cout << endl;
-
-    cout <<"OPTIMIZED PATH WITH COORDINATES: "<< endl; 
-    for(int i = 0; i < path_points.size(); i++){
-      cout << "x=" << path_points[i].x << " y=" << path_points[i].y << " theta=" << path_points[i].th << endl;
-    }
-    cout << endl;
-    cout << endl;   
+  cout <<"OPTIMIZED PATH WITH COORDINATES: "<< endl; 
+  for(int i = 0; i < path_points.size(); i++){
+    cout << "x=" << path_points[i].x << " y=" << path_points[i].y << " theta=" << path_points[i].th << endl;
+  }
+  cout << endl;
+  cout << endl;   
 }
-
-
-// ----------------- GRAVE YARD ----------------------
-
-
-// bool points_successive (POINT a, POINT b, std::vector<POINT>  obstacle){
-//         for(int i= 0 ;i< obstacle.size();i++){
-//             if(a.x == obstacle[i].x && a.y == obstacle[i].y){
-//                 std::cout << " a found" << endl;
-//                 if(i==obstacle.size()-1){
-//                     return false;
-//                 }
-//                 std::cout << " next point: (" << obstacle[i+1].x << " , " << obstacle[i+1].y 
-//                 << ") point b : ( " << b.x << " , " << b.y << endl;
-//                 return (obstacle[i+1].x == b.x && obstacle[i+1].y == b.y);
-//             }
-//             if(b.x == obstacle[i].x && b.y == obstacle[i].y){
-//                 std::cout << " b found" << endl;
-//                 if(i==obstacle.size()-1){
-//                     return false;
-//                 }
-//                 std::cout << " next point: (" << obstacle[i+1].x << " , " << obstacle[i+1].y 
-//                 << ") point a : ( " << a.x << " , " << a.y << endl;
-//                 return (obstacle[i+1].x == a.x && obstacle[i+1].y == a.y);
-//             }
-//         }
-//     return false;
-// }
-
-// int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles){
-//     int obs1_num = -1;
-//     int obs2_num = -1;
-//     for(POINT curr_point : obstacles){
-//         std::cout << "current point: ( " << curr_point.x << " , " << curr_point.y << ") point a: (" << a.x << " , " << a.y << ") " << endl;
-//         if(curr_point.x == a.x && curr_point.y == a.y){
-//             obs1_num = curr_point.obs;
-//         }
-//         if(curr_point.x == b.x && curr_point.y == b.y){
-//             obs2_num = curr_point.obs;
-//         }
-//         if(obs1_num !=-1 && obs2_num != -1){
-//             break;
-//         }
-//     }
-//     std::cout << "obs1: " << obs1_num << " obs2: " << obs2_num << endl;
-//     if(obs1_num == obs2_num){
-//         return obs1_num;
-//     }
-//     return -1;
-// }
-
-
-//Function to determine the intersection of two segments; source https://flassari.is/2008/11/line-line-intersection-in-cplusplus/
-// POINT intersection(SEGMENT segment1, SEGMENT segment2) {   
-//     POINT intersection_point;
-
-//     float d = (segment1.a.x - segment1.b.x) * (segment2.a.y - segment2.b.y) - (segment1.a.y - segment1.b.y) * (segment2.a.x - segment2.b.x);
-
-//     if (d == 0) {
-// 		intersection_point.x = (-1);
-//     	intersection_point.y = (-1);
-//         return intersection_point;
-//     }
-
-//     // Get the x and y
-//     float pre = (segment1.a.x*segment1.b.y - segment1.a.y*segment1.b.x); 
-//     float post = (segment2.a.x*segment2.b.y - segment2.a.y*segment2.b.x);
-//     float x = ( pre * (segment2.a.x - segment2.b.x) - (segment1.a.x - segment1.b.x) * post ) / d;
-//     float y = ( pre * (segment2.a.y - segment2.b.y) - (segment1.a.y - segment1.b.y) * post ) / d;
-
-//     if ( int(1000000*x) < int(1000000*min(segment1.a.x, segment1.b.x)) || int(1000000*x) > int(1000000*max(segment1.a.x, segment1.b.x)) || int(1000000*x) < int(1000000*min(segment2.a.x, segment2.b.x)) || int(1000000*x) > int(1000000*max(segment2.a.x, segment2.b.x)) ) {
-// 		intersection_point.x = (-1);
-//     	intersection_point.y = (-1);
-//         return intersection_point;
-//     }
-//     if ( int(1000000*y) < int(1000000*min(segment1.a.y, segment1.b.y)) || int(1000000*y) > int(1000000*max(segment1.a.y, segment1.b.y)) || int(1000000*y) < int(1000000*min(segment2.a.y, segment2.b.y)) || int(1000000*y) > int(1000000*max(segment2.a.y, segment2.b.y)) ) {
-// 		intersection_point.x = (-1);
-//     	intersection_point.y = (-1);
-//         return intersection_point;
-//     }
-
-//     intersection_point.x = x; //(int(x+0.5));
-//     intersection_point.y = y; //(int(y+0.5));
-
-
-//     return intersection_point;
-// }
-
-
-// function that returns the determinant of a 2x2 matrix
-// float determinant( POINT a , POINT b){
-//     return float ( (a.x * b.y) - (a.y * b.x) );
-// }
-
-// bool counter_clockwise(POINT A,POINT B,POINT C){
-//     return double ((C.y-A.y) * (B.x-A.x)) > double ((B.y-A.y) * (C.x-A.x));
-// }
-
-// // function to test if two lines intersect. returns true if they are
-// bool intersect(POINT A,POINT B,POINT C,POINT D,bool print = false){
-//     //Check if any three points are co-linear
-
-//     float t1 = double(A.x * (B.y - C.y)) + double(B.x * (C.y - A.y)) + double(C.x * (A.y - B.y));
-//     float t2 = double(A.x * (B.y - D.y)) + double(B.x * (D.y - A.y)) + double(D.x * (A.y - B.y));
-//     float t3 = double(A.x * (C.y - D.y)) + double(C.x * (D.y - A.y)) + double(D.x * (A.y - C.y));
-//     float t4 = double(B.x * (C.y - D.y)) + double(C.x * (D.y - B.y)) + double(D.x * (B.y - C.y));
-
-//     if (print){
-//         std::cout << "-t1: " <<  t1 << " -> " << (t1 == 0)  << std::endl;
-//         std::cout << "-t2: " <<  t2 << " -> " << (t2 == 0)  << std::endl;
-//         std::cout << "-t3: " <<  t3 << " -> " << (t3 == 0)  << std::endl;
-//         std::cout << "-t4: " <<  t4 << " -> " << (t4 == 0)  << std::endl;
-//         std::cout << "-t5: " << (counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D)) << std::endl;
-//     }
-//     // if statements to check if any 3 points are co-linear
-//     // if( t1 == 0 || t2 == 0 || t3 == 0 || t4 ==0){
-//     //     return true;
-//     // }
-
-//     return counter_clockwise(A,C,D) != counter_clockwise(B,C,D) && counter_clockwise(A,B,C) != counter_clockwise(A,B,D);;
-// }
-
-// // calculates the point of intersection between two lines
-// // must be only triggered if the two lines are infact intersecting
-// POINT line_intersection(POINT A, POINT B, POINT C, POINT D) { 
-//     POINT inter_p = {-1,-1};
-
-//     POINT x_diff = {A.x - B.x , C.x - D.x};
-//     POINT y_diff = {A.y - B.y , C.y - D.y};
-//     float div = determinant(x_diff, y_diff);
-
-//     if (div == 0){
-//         return inter_p;
-//     }
-//     float h1 = determinant(A,B);
-//     float h2 = determinant(C,D);
-//     POINT d = {h1,h2};
-//     float x = determinant(d,x_diff) / div;
-//     float y = determinant(d, y_diff) / div;
-
-//     inter_p = {x,y};
-//     // std::cout << "intersection point: " << inter_p.x << inter_p.y << std::endl;
-//     return inter_p;
-//     }
-
-// // function to test if two segments of line are intersecting
-// // if they are not, it returns a point of -1. if they are, it calcuates the intersection point
-// POINT segment_intersection(SEGMENT sigment1, SEGMENT sigment2,bool print = false){
-//     POINT intersection_p = {-1,-1};
-//     POINT a = sigment1.a;
-//     POINT b = sigment1.b;
-//     POINT c = sigment2.a;
-//     POINT d = sigment2.b;
-//     int enlarge = 600;
-
-//     if (print){
-//         std::cout << "-- a: (" << a.x*enlarge << "," << a.y*enlarge << ") b: (" << b.x*enlarge << "," << b.y*enlarge << ")" << std::endl;
-//         std::cout << "-- c: (" << c.x*enlarge << "," << c.y*enlarge << ") d: (" << d.x*enlarge << "," << d.y*enlarge << ")" << std::endl;
-//         std::cout << "-- the intersect call func result: " << (intersect(a, b, c, d)) << std::endl;
-//     }
-    
-//     if( intersect(a, b, c, d,print)){
-//         return line_intersection(a, b, c, d);
-//     }
-//     return intersection_p;  
-// }
