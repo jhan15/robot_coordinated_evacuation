@@ -12,7 +12,7 @@
 #include "vertical_cell_decomposition.hpp"
 #include "motion_planning.hpp"
 
-bool plot_a = true; // activate the plots
+bool plot_a = false; // activate the plots
 bool debug = false; // activate print outs
 
 
@@ -329,7 +329,7 @@ namespace student {
       tie(segment_distance,cumulative_distance,total_path_dist,path_segments) = calculate_distances(path_points);
       if(plot_a){plot_lines(plot,path_points,robots_number);}
       intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);
-      cout << "intersection "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
+      cout << "intersection robot #: "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
       
       // if intersection detected -> look at the paths that intersected 
       if(intersecting_rob[0][0] != -1){
@@ -343,8 +343,8 @@ namespace student {
         else{reduced = -1;}
         // flag the path for reduction and re-start the while loop
         if(reduced!=-1){
+          cout << "re-try triggered for robot#: " << reduced << endl;
           reduce_opt[reduced] += 1;
-          cout << "retrey triggered for robot#:" << reduced << endl;
           continue;                
         }
       }
@@ -379,7 +379,7 @@ namespace student {
             if(plot_a){plot_dubins(plot,path,robots_number);}
             // returns the robot number paths that has intersected - if any
             intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);// <- true for plot out
-            cout << "intersection "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
+            cout << "intersection robot #: "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
           }
           if(intersecting_rob[0][0] != -1){
             // check which path has the longer path -> make target for look ahead reduction
@@ -393,7 +393,7 @@ namespace student {
             // flag the path for reduction and re-start the while loop
             if(reduced!=-1){
               reduce_opt[reduced] += 1;
-              cout << "retrey triggered for robot#:" << reduced << endl;
+              cout << "re-try triggered for robot#: " << reduced << endl;
               continue;                
             }
           }
@@ -411,6 +411,9 @@ namespace student {
         }
       }
     }
+    std::cout << "\n=============================="<< endl;
+    std::cout << "finished computing robot paths" << endl;
+    std::cout << "==============================\n"<< endl;
 
     //close the plot on key press
     // cv::waitKey(0);    
