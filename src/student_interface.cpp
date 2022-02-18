@@ -81,6 +81,11 @@ namespace student {
     float offset_away_from_gate = 0.04;  // endpoint distance away from the gate
     float gamma = 0.01;  // cost decrease [look_ahead_optimize] on distance the further ahead you're looking
     bool simplify = true; // simplify the obstacles and the merged obstacles
+    // for time step function
+    float slow_down_rate = 0.9; // to slow down the car at the gate
+    float start_slow_down = 0.15; // at what distance left to start slow down
+    float offset = 0.07; // how big the boxes around the points
+    // *** Parameters tuning ***    
 
     std::vector<float> Kmax = {Kmax_start,Kmax_start,Kmax_start};
     cout << "printing points from path " << endl;
@@ -327,8 +332,9 @@ namespace student {
       int reduced; // to target a specific path to reduce its look ahead count
       std::vector<std::vector<int>> intersecting_rob = {{-1,-1}};
       tie(segment_distance,cumulative_distance,total_path_dist,path_segments) = calculate_distances(path_points);
-      if(plot_a){plot_lines(plot,path_points,robots_number);}
-      intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);
+      // if(plot_a){plot_lines(plot,path_points,robots_number);}
+      intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,
+                                              path_segments,plot,slow_down_rate,start_slow_down,offset,false);
       cout << "intersection robot #: "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
       
       // if intersection detected -> look at the paths that intersected 
@@ -378,7 +384,8 @@ namespace student {
             tie(segment_distance,cumulative_distance,total_path_dist,path_segments) = calculate_distances(path_copy);
             if(plot_a){plot_dubins(plot,path,robots_number);}
             // returns the robot number paths that has intersected - if any
-            intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);// <- true for plot out
+            intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,
+                                              path_segments,plot,slow_down_rate,start_slow_down,offset,debug);            
             cout << "intersection robot #: "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
           }
           if(intersecting_rob[0][0] != -1){

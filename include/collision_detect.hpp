@@ -21,4 +21,6 @@ bool arc_arc_coll(double a1, double b1, double r1, double s1, double e1,
 
 bool overlap_check(const Polygon &pol1, const Polygon &pol2);
 std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std::vector<float>,std::vector<std::vector<SEGMENT> >> calculate_distances(std::vector<std::vector<robotPos>> path);
-std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<float> > segment_distnace,std::vector<std::vector<float> > cumulative_distance,std::vector<float> total_path_dist,std::vector<std::vector<SEGMENT> > path_segments,cv::Mat plot,bool debug);
+std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<float> > segment_distance, std::vector<std::vector<float> > cumulative_distance,
+                                                    std::vector<float> total_path_dist,std::vector<std::vector<SEGMENT> > path_segments,
+                                                    cv::Mat plot,float slow_down_rate,float start_slow_down,float offset,bool debug);

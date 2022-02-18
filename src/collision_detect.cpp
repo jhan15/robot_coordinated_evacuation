@@ -332,6 +332,7 @@ bool overlap_check(const Polygon &pol1, const Polygon &pol2){
     return true;
 }
 
+/* calculates all the distances that the robot would travel on each segement */
 std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std::vector<float>,std::vector<std::vector<SEGMENT> >> calculate_distances(std::vector<std::vector<robotPos>> path){
     SEGMENT path_piece;
     float dis=0;
@@ -341,7 +342,6 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
     std::vector<float> total_path_dist;
     std::vector<std::vector<SEGMENT> > path_segments;
     for(int j = 0; j<path.size();j++){
-    //   cout<< "robot # :"<< j << endl;
       segment_distance.push_back({});
       cumulative_distance.push_back({});
       path_segments.push_back({});
@@ -353,21 +353,19 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
         segment_distance[j].push_back(curr_dis);
         cumulative_distance[j].push_back(dis);
         path_segments[j].push_back(path_piece);
-        // cout << "segement #:" << k-1 << "(" << path_piece.a.x << " , " << path_piece.a.y << " ),( " << path_piece.b.x << " , " << path_piece.b.y << " )" << endl;
-        // cout << "segement distance " << curr_dis << " distance is: " << dis << " \n==============" <<  endl;
       }
       total_path_dist.push_back(dis);
-    //   cout << "total path distance for rob#: "<< j << " is: "<< dis << endl;
       dis = 0;
     }
     return std::make_tuple(segment_distance,cumulative_distance,total_path_dist,path_segments);
 }
 
-std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<float> > segment_distance, std::vector<std::vector<float> > cumulative_distance,std::vector<float> total_path_dist,std::vector<std::vector<SEGMENT> > path_segments,cv::Mat plot,bool debug){
-    // important parameters
-    float slow_down_rate = 0.9; // to slow down the car at the gate
-    float start_slow_down = 0.15; // at what distance left to start slow down
-    float offset = 0.07; // how big the boxes around the points  
+/* a time step wise function to calculate the location of each robot on their path at 
+pre-defined time step */
+std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<float> > segment_distance, std::vector<std::vector<float> > cumulative_distance,
+                                                    std::vector<float> total_path_dist,std::vector<std::vector<SEGMENT> > path_segments,
+                                                    cv::Mat plot,float slow_down_rate,float start_slow_down,float offset,bool debug){
+
     
     bool overlap = false;
     float step_size = 0.02;
@@ -391,26 +389,19 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
                 }
                 else{slow_down=1;}
                 car_boxes[i].push_back({}); //create new polygon
-                // cout << "slow down"<< slow_down << " current_step" << current_step<< endl;
                 at_start = cumulative_distance[i][s] - segment_distance[i][s];
                 distance_on_seg = current_step - at_start;
-                // cout << "i------s: "<<i<< " , " << s << " segement_distance " << segment_distance[i][s] << endl;
-                // cout << "current_step " << current_step << "cumulatinve_distance" << cumulative_distance[i][s] << endl;
-                // cout << "at start " << at_start << endl;
+                if(debug){
+                    cout << "i------s: "<<i<< " , " << s << " segement_distance " << segment_distance[i][s] << endl;
+                    cout << "current_step " << current_step << "cumulatinve_distance" << cumulative_distance[i][s] << endl;
+                    cout << "at start " << at_start << endl;
+                }
                 dis_ratio = distance_on_seg / segment_distance[i][s];
-                // cout << "distance_on_seg " << distance_on_seg << " dis_ratio " << dis_ratio << endl;
                 car_point = {((1 - dis_ratio) * path_segments[i][s].a.x + dis_ratio * path_segments[i][s].b.x), ((1 - dis_ratio) * path_segments[i][s].a.y + dis_ratio * path_segments[i][s].b.y)};
-                // cout << "car_point" << s << "(" << car_point.x << "," << car_point.y << endl;
                 car_boxes[i][itr].push_back({car_point.x-offset,car_point.y-offset});
                 car_boxes[i][itr].push_back({car_point.x+offset,car_point.y-offset});
                 car_boxes[i][itr].push_back({car_point.x+offset,car_point.y+offset});
                 car_boxes[i][itr].push_back({car_point.x-offset,car_point.y+offset});
-                // cout << "----------"<< endl;
-                // cout << "car_boxes " << s << " " << car_boxes[i][itr].size()-4 << " (" << car_boxes[i][itr][car_boxes[i][itr].size()-4].x << "," << car_boxes[i][itr][car_boxes[i][itr].size()-4].y << endl;
-                // cout << "car_boxes " << s << " " << car_boxes[i][itr].size()-3 << " (" << car_boxes[i][itr][car_boxes[i][itr].size()-3].x << "," << car_boxes[i][itr][car_boxes[i][itr].size()-3].y << endl;
-                // cout << "car_boxes " << s << " " << car_boxes[i][itr].size()-2 << " (" << car_boxes[i][itr][car_boxes[i][itr].size()-2].x << "," << car_boxes[i][itr][car_boxes[i][itr].size()-2].y << endl;
-                // cout << "car_boxes " << s << " " << car_boxes[i][itr].size()-1 << " (" << car_boxes[i][itr][car_boxes[i][itr].size()-1].x << "," << car_boxes[i][itr][car_boxes[i][itr].size()-1].y << endl;
-                // cout << "------------" << endl;
                 itr+=1;
                 current_step+=(step_size*slow_down);
             }
@@ -424,7 +415,6 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
             longest_path_ind = j;
         }
     }
-    // cout << "longest path " << longest_path << "longest path index " <<longest_path_ind << endl;
 
     if(debug){
         for(int i= 0; i<car_boxes[longest_path_ind].size();i++){// for polygon in the step
@@ -434,7 +424,6 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
             auto color_rand = cv::Scalar(output7,output8,output9);
             overlap = false;
             for(int j= 0; j<car_boxes.size();j++){ // for each robot
-                // cout << "i: " << i << " j: " << j << endl;
                 if(i< car_boxes[j].size()){ // make sure that we still have boxes left in the step for each robot
                     for(int s= 0; s<car_boxes[j][i].size();s++){ // for printing the polygons
                         int ind = (s+1)%car_boxes[j][i].size();
@@ -442,8 +431,8 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
                     }
                 }
             } 
-            // cv::imshow("Clipper", plot);
-            // cv::waitKey(0);  
+            cv::imshow("Clipper", plot);
+            cv::waitKey(0);  
         }
     }
 
@@ -452,10 +441,8 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
         overlap = false;
         for(int j= 0; j<car_boxes.size()-1&&!break_out;j++){ // for each robot
             for(int k=j+1;k<car_boxes.size()&&!break_out;k++){
-                // cout << "i: " << i << " j: " << j << " k: " << k << endl; 
                 if(i< car_boxes[j].size() && i< car_boxes[k].size()){ // make sure that we still have boxes left in the step for each robo
                     overlap = overlap_check(car_boxes[j][i], car_boxes[k][i]);
-                    // cout << "overlap: " << overlap << endl;
                     if(overlap){
                         intersection_lines.push_back({j,k});
                         break_out = true;
