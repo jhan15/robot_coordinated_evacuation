@@ -13,8 +13,6 @@
 #include "vertical_cell_decomposition.hpp"
 
 void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, std::vector<std::vector<POINT>> cells, POINT start_point, POINT end_point, std::vector<std::vector<int>> graph, std::vector<POINT> graph_vertices,std::vector<int> my_path, std::vector<POINT> graph_chosen, std::vector<int> path){
-
-    int enlarge = 600;
     float robot = 0.8 * robot_num;
 
     if(robot_num==1){
@@ -157,7 +155,6 @@ void plot_map (cv::Mat plot,int robot_num, std::vector<POINT> sorted_vertices, s
 }
 
 void plot_dubins (cv::Mat plot,std::vector<Path> path, int robots_number){
-  int enlarge = 600;
   for(int robot = 0; robot < robots_number; robot ++) {
     int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
     int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
@@ -171,7 +168,6 @@ void plot_dubins (cv::Mat plot,std::vector<Path> path, int robots_number){
   }
 }
 void plot_lines (cv::Mat plot,std::vector<std::vector<robotPos>> path, int robots_number){
-  int enlarge = 600;
   for(int robot = 0; robot < robots_number; robot ++) {
     int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
     int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));

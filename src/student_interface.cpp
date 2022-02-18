@@ -12,10 +12,8 @@
 #include "vertical_cell_decomposition.hpp"
 #include "motion_planning.hpp"
 
-
-int enlarge = 600; // for plotting purposes
 bool plot_a = true; // activate the plots
-bool debug = true; // activate print outs
+bool debug = false; // activate print outs
 
 
 namespace student {
@@ -82,6 +80,7 @@ namespace student {
     float offset_gate_width = -0.05; // distance between robots at the gate
     float offset_away_from_gate = 0.04;  // endpoint distance away from the gate
     float gamma = 0.01;  // cost decrease [look_ahead_optimize] on distance the further ahead you're looking
+    bool simplify = true; // simplify the obstacles and the merged obstacles
 
     std::vector<float> Kmax = {Kmax_start,Kmax_start,Kmax_start};
     cout << "printing points from path " << endl;
@@ -95,7 +94,7 @@ namespace student {
 
     // OBSTACLES PREPROCESSING
     // inflating the obsticales and borders of the arena
-    bool simplify = true;
+
     std::vector<Polygon> inflated_obstacle_list = inflate_obstacles(obstacle_list,inflate_value,simplify,plot);
     const Polygon inflated_borders = inflate_borders(borders,-inflate_value,plot);
 

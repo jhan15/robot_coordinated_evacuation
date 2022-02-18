@@ -33,4 +33,5 @@ struct SEGMENT {
 
 
 typedef boost::geometry::model::d2::point_xy<double> point_boost;
+float enlarge = 600.0;
 #endif
