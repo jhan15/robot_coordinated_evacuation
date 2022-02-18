@@ -20,10 +20,9 @@ add_library(student SHARED
    src/inflate_objects.cpp
    include/clipper/clipper.cpp
    src/collision_detect.cpp
-   src/dubins/dubins.cpp
+   src/dubins.cpp
    src/vertical_cell_decomposition.cpp
    src/plot.cpp
-   src/motion_planning.cpp
 )
 
 target_link_libraries(student
