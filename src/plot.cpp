@@ -170,3 +170,17 @@ void plot_dubins (cv::Mat plot,std::vector<Path> path, int robots_number){
     cv::waitKey(0); 
   }
 }
+void plot_lines (cv::Mat plot,std::vector<std::vector<robotPos>> path, int robots_number){
+  int enlarge = 600;
+  for(int robot = 0; robot < robots_number; robot ++) {
+    int output1 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    int output2 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    int output3 = 0 + (rand() % static_cast<int>(205 - 0 + 1));
+    auto color_rand = cv::Scalar(output1,output2,output3);
+    for (unsigned i=1; i<path[robot].size(); i++) {
+    cv::line(plot, cv::Point2f(path[robot][i-1].x*enlarge,path[robot][i-1].y*enlarge), cv::Point2f(path[robot][i].x*enlarge,path[robot][i].y*enlarge), color_rand, 2);
+    }
+    cv::imshow("Clipper", plot);
+    cv::waitKey(0); 
+  }
+}

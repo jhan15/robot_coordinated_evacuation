@@ -17,6 +17,7 @@
 
 int enlarge = 600; // IF YOU CHANGE THIS CHANGE IT ALSO IN PLOT.CPP
 
+
 namespace student {
 
   void loadImage(cv::Mat& img_out, const std::string& config_folder){  
@@ -205,8 +206,10 @@ namespace student {
     // for optimal path -> look_ahead = INFINITIY , gamma = 0.01;
     float look_ahead; // how many points ahead current point is allowed to look
     float gamma = 0.01;  // cost decrease on distance the further ahead you're looking 
-    std::vector<int> reduce_opt = {0, 0, 0};
-    std::vector<int> last_opt = {0, 0, 0};
+
+    std::vector<int> reduce_opt = {0, 0, 0}; // reduction flags for each path
+    std::vector<int> saved_reduce_opt = {0,0,0}; // to save the previous state of the reduction flags
+    std::vector<int> last_opt = {0, 0, 0}; // turns true if the look ahead has reached lower limit
 
     // option #1: my_path
     // option #2: optimized_path
@@ -244,6 +247,11 @@ namespace student {
     }
     obs.push_back(ob);
 
+    std::vector<std::vector<float> > segment_distance;
+    std::vector<std::vector<float> > cumulative_distance;
+    std::vector<float> total_path_dist;
+    std::vector<std::vector<SEGMENT> > path_segments;
+
     //the graph is adjusted for each point by adding its starting point
     //then a path is calculated for each robot
     while(feasible_dubins[0] + feasible_dubins[1] + feasible_dubins[2] != 3) {
@@ -258,9 +266,7 @@ namespace student {
         
           //finding a path using breadth first search
           my_path[robot] = bfs(graph, graph_vertices.size()-2, graph_vertices.size()-1);
-          look_ahead = my_path[robot].size() - reduce_opt[robot];
-          cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;
-          if(look_ahead == 0) {last_opt[robot] = 1;}
+
 
           //separating only the graph vertices which belong to the path for optimization purposes
           new_graph_vertices.clear();
@@ -268,15 +274,33 @@ namespace student {
             new_graph_vertices.push_back({graph_vertices[my_path[robot][i]].x,graph_vertices[my_path[robot][i]].y});
           }
 
+          // not needed - > extra computation for no reason
           //optimizing the graph
-          std::vector< std::vector<int> >  optimized_graph;
-          optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
+          // std::vector< std::vector<int> >  optimized_graph;
+          // optimized_graph = optimize_graph(my_path[robot], new_graph_vertices, obstacles);
 
           //calculating the optimized path using breadth first search
-          optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
+          // optimized_path[robot] = bfs(optimized_graph, 0, new_graph_vertices.size()-1);
+          
+          int curr_size = optimized_path_look_ahead[robot].size();
+          look_ahead = my_path[robot].size() - reduce_opt[robot];
+          cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;
+          if(look_ahead == 0) {last_opt[robot] = 1;}
           optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
+
+          // while loop to keep reducing the look ahead for the targeted path until a new point emerges
+          while (curr_size == optimized_path_look_ahead[robot].size() && saved_reduce_opt[robot]!=reduce_opt[robot]){
+            reduce_opt[robot]+=1;
+            look_ahead = my_path[robot].size() - reduce_opt[robot];
+            cout << "robot " << robot<< "- look_ahead: " << look_ahead << "; my_path size: " << my_path[robot].size() << endl;
+            if(look_ahead == 0) {last_opt[robot] = 1;}
+            optimized_path_look_ahead[robot] = look_ahead_optimize(my_path[robot],graph_vertices,obstacles, look_ahead,gamma);
+          }
           //changing the path index to actual points for dubins
-          path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);     
+          path_points[robot] = index_to_coordinates((*path_option)[robot], *graph_option);    
+          saved_reduce_opt = reduce_opt;
+
+
           //printing and plotting the results
           // cout << "RESULTS FOR ROBOT " << robot << endl;
           // print_data(boundary, start_point, end_points[robot], obstacles, graph_vertices, graph, new_graph_vertices,
@@ -286,52 +310,98 @@ namespace student {
         }
       }    
 
+      // check to see if the path lines intersect on time incruments
+      // [constant velocity -> slow down close to the gate]
+      int reduced; // to target a specific path to reduce its look ahead count
+      std::vector<std::vector<int>> intersecting_rob = {{-1,-1}};
+      tie(segment_distance,cumulative_distance,total_path_dist,path_segments) = calculate_distances(path_points);
+      plot_lines(plot,path_points,robots_number);
+      intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);
+      cout << "intersection "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
+      
+      // if intersection detected -> look at the paths that intersected 
+      if(intersecting_rob[0][0] != -1){
+        // check which path has the longer path -> make target for look ahead reduction
+        if(total_path_dist[intersecting_rob[0][0]] > total_path_dist[intersecting_rob[0][1]] && !last_opt[intersecting_rob[0][0]]){
+          reduced = total_path_dist[intersecting_rob[0][0]];
+        }
+        else{
+          reduced = total_path_dist[intersecting_rob[0][1]];
+        }
+        // flag the path for reduction and re-start the while loop
+        if(!last_opt[reduced]){
+          reduce_opt[reduced] += 1;
+          continue;                
+        }
+      }
+
       //path_points = coordinate_motion(path_points);
 
       // ****DUBINS PATH****
 
-      float Kmax = 8.0;
-
+      float Kmax = 15.0;
+      std::vector<std::vector<robotPos>> path_copy; // to be used for collision detection
       // Multipoints-dubins
       std::cout<<"Multipoints_dubins ----------------------\n"<<std::endl;
       for(int robot = 0; robot < robots_number; robot ++){
+        path_copy.push_back({});
         feasible_dubins[robot] = 1;
         std::cout<<"Total points for robot "<<robot<<": "<<path_points[robot].size()<<std::endl;
         path_points[robot][0].th = mod2Pi(theta[robot]);
-
-        if (done[robot] == false){
-          std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
-          if (mdubins.size()>0){
-            for (int i = 0; i < mdubins.size(); i++){
-              for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
-                path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
-              }
+        std::vector<shortestDubinsResult> mdubins = dubinsIDP(path_points[robot], obs, Kmax);
+        if (mdubins.size()>0){ // a dubins path has been found
+          for (int i = 0; i < mdubins.size(); i++){
+            for (auto it = mdubins[i].dubinsWPList.begin(); it != mdubins[i].dubinsWPList.end(); ++it){
+              path[robot].points.emplace_back((*it).s, (*it).pos.x, (*it).pos.y, (*it).pos.th, (*it).k);
+              path_copy[robot].push_back( robotPos{ (*it).pos.x, (*it).pos.y } );
             }
-            done[robot] = true;
           }
-          else{
-            if(!last_opt[robot]) {
-              feasible_dubins[robot] = 0; // if false, change look-ahead
-              reduce_opt[robot] += 1;
-              break;
+          // to only start collision check between paths once we have more than one path
+          if(robot !=0){
+            tie(segment_distance,cumulative_distance,total_path_dist,path_segments) = calculate_distances(path_copy);
+            plot_dubins(plot,path,robots_number);
+            // returns the robot number paths that has intersected - if any
+            intersecting_rob = path_intersect_check(segment_distance,cumulative_distance,total_path_dist,path_segments,plot,true);// <- true for plot out
+            cout << "intersection "<<  intersecting_rob[0][0] << " , " << intersecting_rob[0][1] << endl;
+          }
+          if(intersecting_rob[0][0] != -1){ // if intersection detected -> look at the paths that intersected 
+            // check which path has the longer path -> make target for look ahead reduction
+            if(total_path_dist[intersecting_rob[0][0]] > total_path_dist[intersecting_rob[0][1]] && !last_opt[intersecting_rob[0][0]]){
+              reduced = total_path_dist[intersecting_rob[0][0]];
             }
-            else {
-              std::cout<<"Can't find dubins path no matter of the optimization"<<std::endl;
-              feasible_dubins[robot] = 1; //fake it to go out of the loop
+            else{
+              reduced = total_path_dist[intersecting_rob[0][1]];
             }
+            if(!last_opt[reduced]){
+              // delete the targeted path from the path vector
+              path[reduced] = {};
+              feasible_dubins[reduced] = 0; // if false, change look-ahead
+              reduce_opt[reduced] += 1;
+              break;                
+            }
+          }
+        }
+        else{
+          if(!last_opt[robot]) {
+            feasible_dubins[robot] = 0; // if false, change look-ahead
+            reduce_opt[robot] += 1;
+            break;
+          }
+          else {
+            std::cout<<"Can't find dubins path no matter of the optimization"<<std::endl;
+            feasible_dubins[robot] = 1; //fake it to go out of the loop
           }
         }
       }
     }
 
-    plot_dubins(plot,path,robots_number);
 
     // ****END OF DUBBINS PATH****
 
 
     //close the plot on key press
-    cv::waitKey(0);    
-    cv::destroyAllWindows();
+    // cv::waitKey(0);    
+    // cv::destroyAllWindows();
 
     return true;
   }
