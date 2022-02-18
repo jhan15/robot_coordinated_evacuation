@@ -2,41 +2,36 @@
 #include "inflate_objects.hpp"
 #include <set>
 
-
 const double enlarge = 600.;
-// for ploting the solution
-// int l = 1000;
-// cv::Mat plot(l ,l, CV_8UC3, cv::Scalar(255,255,255));
 
-
-void writeSvg(std::vector<polygon> const& g, std::string fname) {
+void writeSvg(std::vector<polygon_boost> const& g, std::string fname) {
     std::ofstream svg(fname);
-    boost::geometry::svg_mapper<point_xy> mapper(svg, 400, 400);
+    boost::geometry::svg_mapper<point_boost> mapper(svg, 400, 400);
     for (auto& p: g) {
         mapper.add(p);
         mapper.map(p, "fill-opacity:0.5;fill:rgb(153,0,0);stroke:rgb(200,0,0);stroke-width:2");
     }
 }
 
-void writeSvg_single(polygon const& g, std::string fname) {
+void writeSvg_single(polygon_boost const& g, std::string fname) {
     std::ofstream svg(fname);
-    boost::geometry::svg_mapper<point_xy> mapper(svg, 400, 400);
+    boost::geometry::svg_mapper<point_boost> mapper(svg, 400, 400);
     mapper.add(g);
     mapper.map(g, "fill-opacity:0.5;fill:rgb(153,0,0);stroke:rgb(200,0,0);stroke-width:2");
 }
 
 Polygon simplify_poly (Polygon poly, float tol){
     Polygon temp_obj;
-    std::vector<point_xy> temp_points;
-    boost::geometry::model::linestring<point_xy> line;
-    boost::geometry::model::linestring<point_xy> simplified;
+    std::vector<point_boost> temp_points;
+    boost::geometry::model::linestring<point_boost> line;
+    boost::geometry::model::linestring<point_boost> simplified;
     for(Point curr_point : poly){
-            line+= point_xy(curr_point.x,curr_point.y);
+            line+= point_boost(curr_point.x,curr_point.y);
         }
     // cout << "line: " << boost::geometry::dsv(line) << endl;
     boost::geometry::simplify(line, simplified, tol);
     // cout << "simplified: " << boost::geometry::dsv(simplified) << endl;
-    for (point_xy point : simplified){
+    for (point_boost point : simplified){
         float x = point.x();
         float y = point.y();
         temp_obj.push_back({x,y});
@@ -70,7 +65,7 @@ std::vector<Polygon> inflate_obstacles(const std::vector<Polygon>& obstacle_list
 
         // applying the offset
         ClipperLib::ClipperOffset co;
-        co.MiterLimit = 230;
+        co.MiterLimit = 10;
 
         co.AddPath(clib_obsticale, ClipperLib::jtMiter, ClipperLib::etClosedPolygon);
         co.Execute(clib_merged_obs, inflate_value);
@@ -186,15 +181,15 @@ Polygon inflate_borders(const Polygon &borders, float inflate_value, cv::Mat plo
 
 std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,const Polygon &borders, cv::Mat plot){
     std::vector<Polygon> trimmed_obstacles;
-    std::vector<point_xy> temp_points;
+    std::vector<point_boost> temp_points;
     Polygon temp_obj;
-    polygon obs_boost;
-    polygon border_boost;
-    std::vector<polygon> output;
+    polygon_boost obs_boost;
+    polygon_boost border_boost;
+    std::vector<polygon_boost> output;
 
     // converting borders to a boost object
     for(Point curr_point: borders){
-        temp_points+= point_xy(curr_point.x,curr_point.y);
+        temp_points+= point_boost(curr_point.x,curr_point.y);
     }
     boost::geometry::assign_points(border_boost, temp_points);
     correct(border_boost);
@@ -204,7 +199,7 @@ std::vector<Polygon> trim_obstacles(const std::vector<Polygon>& obstacle_list,co
         count++;
         temp_points.clear();
         for(Point curr_point : curr_obs){ 
-            temp_points+= point_xy(curr_point.x,curr_point.y);
+            temp_points+= point_boost(curr_point.x,curr_point.y);
         }
         boost::geometry::assign_points(obs_boost, temp_points);
         correct(obs_boost);
@@ -506,7 +501,7 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
     std::vector<float> total_path_dist;
     std::vector<std::vector<SEGMENT> > path_segments;
     for(int j = 0; j<path.size();j++){
-      cout<< "robot # :"<< j << endl;
+    //   cout<< "robot # :"<< j << endl;
       segment_distance.push_back({});
       cumulative_distance.push_back({});
       path_segments.push_back({});
@@ -518,11 +513,11 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
         segment_distance[j].push_back(curr_dis);
         cumulative_distance[j].push_back(dis);
         path_segments[j].push_back(path_piece);
-        cout << "segement #:" << k-1 << "(" << path_piece.a.x << " , " << path_piece.a.y << " ),( " << path_piece.b.x << " , " << path_piece.b.y << " )" << endl;
-        cout << "segement sistance" << curr_dis << " distance is: " << dis << " \n==============" <<  endl;
+        // cout << "segement #:" << k-1 << "(" << path_piece.a.x << " , " << path_piece.a.y << " ),( " << path_piece.b.x << " , " << path_piece.b.y << " )" << endl;
+        // cout << "segement distance " << curr_dis << " distance is: " << dis << " \n==============" <<  endl;
       }
       total_path_dist.push_back(dis);
-      cout << "total path distance for rob#:"<< j << "is:"<< dis << endl;
+    //   cout << "total path distance for rob#: "<< j << " is: "<< dis << endl;
       dis = 0;
     }
     return std::make_tuple(segment_distance,cumulative_distance,total_path_dist,path_segments);
@@ -530,8 +525,8 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
 
 std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<float> > segment_distance, std::vector<std::vector<float> > cumulative_distance,std::vector<float> total_path_dist,std::vector<std::vector<SEGMENT> > path_segments,cv::Mat plot,bool debug){
     // important parameters
-    float slow_down_rate = 0.95; // to slow down the car at the gate
-    float start_slow_down = 0.8; // at which percent of path you start to slow down
+    float slow_down_rate = 0.9; // to slow down the car at the gate
+    float start_slow_down = 0.15; // at what distance left to start slow down
     float offset = 0.07; // how big the boxes around the points  
     
     bool overlap = false;
@@ -551,10 +546,10 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
         itr = 0;
         for(int s=0;s<cumulative_distance[i].size();s++){
             while (current_step < cumulative_distance[i][s]){
-                // if(current_step/total_path_dist[i] > start_slow_down){
-                //     if(slow_down>0.1){slow_down*= slow_down_rate;}
-                // }
-                // else{slow_down=1;}
+                if((total_path_dist[i]- current_step) < start_slow_down){
+                    if(slow_down>0.1){slow_down*= slow_down_rate;}
+                }
+                else{slow_down=1;}
                 car_boxes[i].push_back({}); //create new polygon
                 // cout << "slow down"<< slow_down << " current_step" << current_step<< endl;
                 at_start = cumulative_distance[i][s] - segment_distance[i][s];
@@ -607,8 +602,8 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
                     }
                 }
             } 
-            cv::imshow("Clipper", plot);
-            cv::waitKey(0);  
+            // cv::imshow("Clipper", plot);
+            // cv::waitKey(0);  
         }
     }
 
@@ -639,10 +634,10 @@ std::vector<std::vector<int> > path_intersect_check(std::vector<std::vector<floa
 std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,bool simplify,cv::Mat plot){
     std::vector<Polygon> merged_obstacles;
     std::vector<std::vector<int> > obstacle_overlap_tab(obstacle_list.size());
-    std::vector<point_xy> temp_points;
+    std::vector<point_boost> temp_points;
     Polygon temp_obj;
-    polygon obs1;
-    polygon obs2;
+    polygon_boost obs1;
+    polygon_boost obs2;
     bool overlap_result = false;
 
     for (int curr_obs = 0; curr_obs < obstacle_list.size(); curr_obs++){
@@ -779,7 +774,7 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
         temp_points.clear();
         //convert obs1 to a boost polygon object
         for(Point curr_point : obstacle_list[merge_list[obs_indices][0]]){
-            temp_points+= point_xy(curr_point.x,curr_point.y);
+            temp_points+= point_boost(curr_point.x,curr_point.y);
         }
         boost::geometry::assign_points(obs1, temp_points);
         correct(obs1);
@@ -790,7 +785,7 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
             // convert obs2 to a boost polygon object
             temp_points.clear();
             for(Point curr_point : obstacle_list[curr_ind]){
-                temp_points+= point_xy(curr_point.x,curr_point.y);
+                temp_points+= point_boost(curr_point.x,curr_point.y);
             }
             boost::geometry::assign_points(obs2, temp_points);
             // std::string name1 = "/home/basemprince/workspace/project/output/obs1_" + std::to_string(obs_indices) + std::to_string(curr_ind) + ".svg";
@@ -800,7 +795,7 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
             // writeSvg_single(obs2,name2);
             // std::cout << "Obstacle 1" << boost::geometry::dsv(obs1) << " has an area of " << boost::geometry::area(obs1) << std::endl;
             // std::cout << "Obstacle 2" << boost::geometry::dsv(obs2) << " has an area of " << boost::geometry::area(obs2) << std::endl;
-            std::vector<polygon> output;
+            std::vector<polygon_boost> output;
             boost::geometry::union_(obs1, obs2, output);
             obs1 = output[0];
             // std::string name="/home/basemprince/workspace/project/output/file_" + std::to_string(obs_indices) + std::to_string(curr_ind) + ".svg";
@@ -842,8 +837,8 @@ std::vector<Polygon> merge_obstacles (const std::vector<Polygon>& obstacle_list,
 
         }
     }
-    cv::imshow("Clipper", plot);
-    cv::waitKey(0); 
+    // cv::imshow("Clipper", plot);
+    // cv::waitKey(0); 
     return merged_obstacles;
 ;
 }

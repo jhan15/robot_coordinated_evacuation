@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "dubins.h"
 #include "vertical_cell_decomposition.hpp"
+#include <bits/stdc++.h>
 	
 using namespace std;
 
@@ -1107,6 +1108,63 @@ std::vector<int> bfs(std::vector< std::vector<int> > graph, int source, int targ
 
     path.push_back(-1); 
     return path;
+}
+void printpath(vector<int>& path)
+{
+    cout << "path: ";
+    int size = path.size();
+    for (int i = 0; i < size; i++)
+        cout << path[i] << " ";   
+    cout << endl;
+}
+ 
+// utility function to check if current
+// vertex is already present in path
+int isNotVisited(int x, vector<int>& path)
+{
+    int size = path.size();
+    for (int i = 0; i < size; i++)
+        if (path[i] == x)
+            return 0;
+    return 1;
+}
+
+std::vector<std::vector<int>>  findpaths(std::vector< std::vector<int> > g, int src, int dst, int path_count)
+{
+	// create a queue which stores
+	// the paths
+	queue<vector<int> > q;
+  std::vector<std::vector<int>>  paths;
+	// path vector to store the current path
+	vector<int> path;
+	path.push_back(src);
+	q.push(path);
+	while (!q.empty()) {
+		path = q.front();
+		q.pop();
+		int last = path[path.size() - 1];
+
+		// if last vertex is the desired destination
+		// then print the path
+		if (last == dst){
+			paths.push_back(path);
+      printpath(path);
+      if(paths.size()>path_count){
+        return paths;
+      }
+    }
+
+		// traverse to all the nodes connected to
+		// current vertex and push new path to queue
+		for (int i = 0; i < g[last].size(); i++) {
+			if (isNotVisited(g[last][i], path)) {
+				vector<int> newpath(path);
+				newpath.push_back(g[last][i]);
+				q.push(newpath);
+			}
+		}
+	}
+  return paths;
 }
 
 

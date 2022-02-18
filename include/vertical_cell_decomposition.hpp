@@ -53,6 +53,7 @@ void print_data(std::vector<POINT> boundary, std::vector<POINT> start_point, POI
 std::vector<std::vector<robotPos>> coordinate_motion(std::vector<std::vector<robotPos>> initial_paths);
 std::vector<SEGMENT> get_boundary_lines(std::vector<POINT> boundary);
 std::vector<POINT> offset_end_points (std::vector<SEGMENT> boundary_lines,int robots_number, std::vector<POINT>end_point);
+std::vector<std::vector<int>> findpaths(std::vector< std::vector<int> > g, int src, int dst, int path_count);
 // bool points_successive (POINT a, POINT b, std::vector<POINT> obstacle);
 // int points_from_same_obs (POINT a, POINT b, std::vector<POINT> obstacles);
 // POINT intersection(SEGMENT segment1, SEGMENT segment2);
