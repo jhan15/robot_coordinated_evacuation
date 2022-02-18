@@ -8,27 +8,22 @@
 using namespace cv;
 
 
-/*
-function that performs a cross product
-*/
+//function that performs a cross product
 double cross_prod(Point2d a, Point2d b){
 	return a.x * b.y - a.y * b.x;
 }
-/*
-function that performs a dot product
-*/
+
+//function that performs a dot product
 double dot_prod(Point2d a, Point2d b){
 	return a.x * b.x + a.y * b.y;
 }
-/*
-function to calculate distance between two points
-*/
+
+//function to calculate distance between two points
 double eucl_distance(Point2d a, Point2d b){
 	return sqrt(pow(a.x-b.x,2) + pow(a.y-b.y,2));
 }
-/*
-checks if 2 lines intersect [collide]. returns a vector of points of intersection if any
-*/
+
+//checks if 2 line segments are intersect.
 std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Point2d> line_b){
     std::vector<Point2d> pts;
 	double t;
@@ -106,9 +101,8 @@ std::vector<Point2d> line_line_coll(std::vector<Point2d> line_a, std::vector<Poi
    	
    	return pts;
 }
-/*
-checks if a line and a circle intersect [collide]. returns a vector of points of intersection if any
-*/
+
+//checks if a line segment and a circle are intersected.
 std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<Point2d> line){
     std::vector<Point2d> pts;
 	std::vector<double> t;
@@ -166,19 +160,7 @@ std::vector<Point2d> circle_line_coll(double a, double b, double r, std::vector<
 
 }
 
-bool arc_pass_intersection(float theta, double s, double e){
-	if (s < e && theta >= s && theta <= e)
-	{
-		return true;
-	}
-	if (s > e && !(theta > e && theta < s))
-	{
-		return true;
-	}
-
-	return false;
-}
-
+//checks if a line segment and an arc of circle are intersected.
 bool arc_line_coll(double a, double b, double r, double s, double e, std::vector<Point2d> line)
 {
 	bool result = false;
@@ -205,6 +187,21 @@ bool arc_line_coll(double a, double b, double r, double s, double e, std::vector
 	return result;
 }
 
+//function to decide an angle within an arc (not used)
+bool arc_pass_intersection(float theta, double s, double e){
+	if (s < e && theta >= s && theta <= e)
+	{
+		return true;
+	}
+	if (s > e && !(theta > e && theta < s))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+//check if two arcs are intersected (not used)
 bool arc_arc_coll(double a1, double b1, double r1, double s1, double e1,
                   double a2, double b2, double r2, double s2, double e2)
 {
@@ -219,7 +216,6 @@ bool arc_arc_coll(double a1, double b1, double r1, double s1, double e1,
 			double y1 = l*(b2-b1)/d - h*(a2-a1)/d + b1;
 			double x2 = l*(a2-a1)/d - h*(b2-b1)/d + a1;
 			double y2 = l*(b2-b1)/d + h*(a2-a1)/d + b1;
-			//std::cout<<x1<<" "<<y1<<" "<<x2<<" "<<y2<<std::endl;
 
 			float theta11 = mod2Pi(atan2(y1-b1,x1-a1));
 			float theta12 = mod2Pi(atan2(y1-b2,x1-a2));
