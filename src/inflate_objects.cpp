@@ -518,8 +518,8 @@ std::tuple<std::vector<std::vector<float> >,std::vector<std::vector<float> >,std
         segment_distance[j].push_back(curr_dis);
         cumulative_distance[j].push_back(dis);
         path_segments[j].push_back(path_piece);
-        cout << "segement #:" << k-1 << "(" << path_piece.a.x << " , " << path_piece.a.y << " ),( " << path_piece.b.x << " , " << path_piece.b.y << " )" << endl;
-        cout << "segement sistance" << curr_dis << " distance is: " << dis << " \n==============" <<  endl;
+        //cout << "segement #:" << k-1 << "(" << path_piece.a.x << " , " << path_piece.a.y << " ),( " << path_piece.b.x << " , " << path_piece.b.y << " )" << endl;
+        //cout << "segement sistance" << curr_dis << " distance is: " << dis << " \n==============" <<  endl;
       }
       total_path_dist.push_back(dis);
       cout << "total path distance for rob#:"<< j << "is:"<< dis << endl;

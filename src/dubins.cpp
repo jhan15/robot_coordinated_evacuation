@@ -746,7 +746,7 @@ vector<shortestDubinsResult> dubinsIDP(vector<robotPos> path_points, vector<vect
             shortestDubinsResult sd = dubinsPath(path_points[i], path_points[i+1], Kmax, obs);
             mdubins.emplace_back(sd);
         }
-        cout<<"     feasible dubins found!\n"<<endl;
+        cout<<"     feasible dubins found with length: "<<dp[0][0]<<endl<<endl;
     }
 
     return mdubins;
