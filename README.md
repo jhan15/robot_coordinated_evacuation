@@ -7,6 +7,15 @@ The project is about designing a coordinated evacuation of a site cluttered by s
 * The robots have to move without touching the border of the map and the obstacles.
 * The robots must not collide with each other.
 
+**Solution**
+
+* A roadmap is created via Vertical Cell Decomposition algorithm
+* A path is computed from roadmap via Breadth First Search algorithm
+* Path optimization is conducted by looking-ahead the path vertices
+* Collision-free Multipoint Markov-Dubins curves are computed via Iterative Dynamic Programming
+* Asynchronous coordination is conducted via a time-step-based collision checking for the three robots
+* If a collision occurs, the second best path from BFS is employed for one robot
+
 ## Structure
 
     ~/workspace
@@ -15,8 +24,19 @@ The project is about designing a coordinated evacuation of a site cluttered by s
 
 ## Setup
 
+### Simulator
+
 ```bash
 $ mkdir ~/workspace
+$ cd workspace
+$ git clone https://github.com/AlexRookie/AppliedRoboticsEnvironment.git simulator/
+$ cd simulator
+$ catkin build
+$ source ./environment.sh
+```
+
+### Planner
+```bash
 $ cd workspace
 $ git clone https://github.com/jhan15/robot_coordinated_evacuation.git project
 $ cd project
