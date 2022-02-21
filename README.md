@@ -16,6 +16,12 @@ The project is about designing a coordinated evacuation of a site cluttered by s
 * Asynchronous coordination is conducted via a time-step-based collision checking for the three robots
 * If a collision occurs, the second best path from BFS is employed for one robot
 
+**Demo**
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/62132206/154967519-4408b8aa-4c82-4196-9789-e3fb88f9ccbb.gif?raw=true">
+</p>
+
 ## Structure
 
     ~/workspace
