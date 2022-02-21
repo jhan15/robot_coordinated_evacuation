@@ -9,7 +9,7 @@ The project is about designing a coordinated evacuation of a site cluttered by s
 
 ## Structure
 
-  ~/workspace
+    ~/workspace
         |__ project
         |__ simulator
 
