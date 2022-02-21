@@ -1,11 +1,25 @@
-# Laboratory of Applied Robotics Student Interface
-Package used by student to complete the assignment of the course.
+# robot_coordinated_evacuation
+The project is about designing a coordinated evacuation of a site cluttered by several obstacles. Three robots have to react to an emergency reaching a gate in minimum time.
+
+**Requirements**
+
+* The robots move at a constant speed (so they can execute Dubins Manoeuvres).
+* The robots have to move without touching the border of the map and the obstacles.
+* The robots must not collide with each other.
+
+## Structure
+
+  ~/workspace
+        |__ project
+        |__ simulator
 
 ## Setup
 
 ```bash
-$ cd workspace/project
-$ git pull https://github.com/ymarkova/theEITgroup.git
+$ mkdir ~/workspace
+$ cd workspace
+$ git clone https://github.com/jhan15/robot_coordinated_evacuation.git project
+$ cd project
 $ mkdir build
 $ cd build
 $ cmake ..
@@ -15,25 +29,20 @@ $ source ../environment.sh
 
 ## Usage
 
+### Run simulation
 ```bash
-$ cd workspace/simulator
-$ AR_simulator_gui # AR_simulator
+# terminor 1
+$ AR_simulator
+# terminal 2
 $ AR_pipeline
-# Select the 4 black corners counter-clockwise starting from the one near the red line
-# Then stop (ctrl + C)
-$ AR_pipeline
+# terminal 3
 $ AR_rviz
+# terminal 4
 $ AR_run
 ```
 
-## Other usage
-
+### Other usage
 ```bash
 # Modify the environment
 $ gedit $AR_map_file
-
-# Disable demo implementation
-$ cd $AR_config_dir
-$ gedit default_implementation.config
-# Then set flag to <False> in order to implement our own solution
 ```
