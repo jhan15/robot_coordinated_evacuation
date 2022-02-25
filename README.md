@@ -22,12 +22,6 @@ The project is about designing a coordinated evacuation of a site cluttered by s
   <img src="https://user-images.githubusercontent.com/62132206/154967519-4408b8aa-4c82-4196-9789-e3fb88f9ccbb.gif?raw=true">
 </p>
 
-## Structure
-
-    ~/workspace
-        |__ project
-        |__ simulator
-
 ## Environment
 
 * Ubuntu __16.04__
@@ -35,6 +29,12 @@ The project is about designing a coordinated evacuation of a site cluttered by s
 * Gazebo __>= 7.16__
 * make __>= 4.1__
 * gcc/g++ __>= 5.4__
+
+## Structure
+
+    ~/workspace
+        |__ project
+        |__ simulator
 
 ## Setup
 
