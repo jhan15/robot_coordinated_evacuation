@@ -1,7 +1,7 @@
 # robot_coordinated_evacuation
 The project is about designing a coordinated evacuation of a site cluttered by several obstacles. Three robots have to react to an emergency reaching a gate in minimum time.
 
-**Requirements**
+**Objectives**
 
 * The robots move at a constant speed (so they can execute Dubins Manoeuvres).
 * The robots have to move without touching the border of the map and the obstacles.
@@ -27,6 +27,14 @@ The project is about designing a coordinated evacuation of a site cluttered by s
     ~/workspace
         |__ project
         |__ simulator
+
+## Environment
+
+* Ubuntu __16.04__
+* ROS __Kinetic__
+* Gazebo __>= 7.16__
+* make __>= 4.1__
+* gcc/g++ __>= 5.4__
 
 ## Setup
 
